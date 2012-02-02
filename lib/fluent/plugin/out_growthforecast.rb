@@ -15,7 +15,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   config_param :mode, :string, :default => 'gauge' # or count/modified
 
   config_param :remove_prefix, :string, :default => nil
-  config_param :tag_for, :sting, :default => 'name_prefix' # or 'ignore' or 'section'
+  config_param :tag_for, :string, :default => 'name_prefix' # or 'ignore' or 'section'
   
   def configure(conf)
     super

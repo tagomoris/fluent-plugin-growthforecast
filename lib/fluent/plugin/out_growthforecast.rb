@@ -70,7 +70,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   def post(tag, name, value)
     url = format_url(tag,name)
     $log.warn "NOW, we are going to post data to growthforecast!!!: " + url
-    res = Net::HTTP.post_form(URI.parse(), {'number' => value, 'mode' => @mode.to_s})
+    res = Net::HTTP.post_form(URI.parse(url), {'number' => value, 'mode' => @mode.to_s})
     $log.info "response:" + res.code
     case res
     when Net::HTTPSuccess

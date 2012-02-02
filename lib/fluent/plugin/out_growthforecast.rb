@@ -86,7 +86,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     es.each {|time,record|
       @name_keys.each {|name|
         if record[name]
-          post(tag, name record[name])
+          post(tag, name, record[name])
         end
       }
     }

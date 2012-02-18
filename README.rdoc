@@ -1,19 +1,59 @@
 = fluent-plugin-growthforecast
 
-Description goes here.
+== Component
 
-== Contributing to fluent-plugin-growthforecast
- 
-* Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet
-* Check out the issue tracker to make sure someone already hasn't requested it and/or contributed it
-* Fork the project
-* Start a feature/bugfix branch
-* Commit and push until you are happy with your contribution
-* Make sure to add tests for it. This is important so I don't break it in a future version unintentionally.
-* Please try not to mess with the Rakefile, version, or history. If you want to have your own version, or is otherwise necessary, that is fine, but please isolate to its own commit so I can cherry-pick around it.
+=== GrowthForecastOutput
+
+Plugin to output numbers(metrics) to 'GrowthForecast', metrics drawing tool over HTTP.
+
+About GrowthForecast, see:
+- Github: https://github.com/kazeburo/growthforecast
+- Japanese blog post by @kazeburo: http://blog.nomadscafe.jp/2011/12/growthforecast.html
+
+GrowthForecast is very simple but useful tool to draw graphs what we want, with GrowthForecastOutput and Fluentd.
+
+== Configuration
+
+=== GrowthForecastOutput
+
+For messages such as:
+    tag:metrics {"field1":300, "field2":20, "field3diff":-30}
+    
+Configuration example for graphs in growthforecast with POST api url 'http://growthforecast.local/api/service1/metrics1/metrics_FIELDNAME'.
+
+    <match metrics>
+      type growthforecast
+      gfapi_url http://growthforecast.local/api/
+      service   service1
+      section   metrics1
+      name_keys field1,field2,field3diff
+    </match>
+
+With this configuration, out_growthforecast posts urls below.
+- http://growthforecast.local/api/service1/metrics1/metrics_field1
+- http://growthforecast.local/api/service1/metrics1/metrics_field2
+- http://growthforecast.local/api/service1/metrics1/metrics_field3diff
+
+
+If you want to use tags for 'section' in GrowthForecast, use 'tag_for' options and remove_prefix (and not to set 'section').
+
+    <match metrics.**>
+      type growthforecast
+      gfapi_url http://growthforecast.local/api/
+      service   service1
+      name_keys field1,field2,field3diff
+      tag_for   section    # or 'name_prefix'(default) or 'ignore'
+      remove_prefix metrics
+    </match>
+
+'mode' option available with 'gauge'(default), 'count', 'modified', just same as 'mode' of GrowthForecast POST parameter.
+
+== TODO
+
+- consider what to do next
+- patches welcome!
 
 == Copyright
 
-Copyright (c) 2012 TAGOMORI Satoshi. See LICENSE.txt for
-further details.
-
+Copyright:: Copyright (c) 2012- TAGOMORI Satoshi (tagomoris)
+License::   Apache License, Version 2.0

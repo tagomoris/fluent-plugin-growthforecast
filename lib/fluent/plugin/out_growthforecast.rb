@@ -79,8 +79,8 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   end
 
   def emit(tag, es, chain)
-    if @input_tag_remove_prefix and
-        ( (tag.start_with?(@removed_prefix_string) and tag.length > @removed_length) or tag == @input_tag_remove_prefix)
+    if @remove_prefix and
+        ( (tag.start_with?(@removed_prefix_string) and tag.length > @removed_length) or tag == @remove_prefix)
       tag = tag[@removed_length..-1]
     end
     es.each {|time,record|

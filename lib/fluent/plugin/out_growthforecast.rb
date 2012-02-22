@@ -31,7 +31,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       raise Fluent::ConfigError, "missing both of name_keys and name_key_pattern"
     end
     if not @name_keys.nil? and @name_key_pattern.nil?
-      raise Fleunt::ConfigError, "cannot specify both of name_keys and name_key_pattern"
+      raise Fluent::ConfigError, "cannot specify both of name_keys and name_key_pattern"
     end
     if @name_keys
       @name_keys = @name_keys.split(',')

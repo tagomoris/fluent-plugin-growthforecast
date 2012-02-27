@@ -83,11 +83,14 @@ class Fluent::GrowthForecastOutput < Fluent::Output
 
   def post(tag, name, value)
     url = format_url(tag,name)
-    res = Net::HTTP.post_form(URI.parse(url), {'number' => value.to_i, 'mode' => @mode.to_s})
-    case res
-    when Net::HTTPSuccess
-      # OK
-    else
+    begin
+      res = Net::HTTP.post_form(URI.parse(url), {'number' => value.to_i, 'mode' => @mode.to_s})
+    rescue IOError, EOFError, SystemCallError
+      # server didn't respond
+      $log.warn "Net::HTTP.post_form raises exception: #{$!.class}, '#{$!.message}'"
+      res = nil
+    end
+    unless res and res.is_a?(Net::HTTPSuccess)
       $log.warn "failed to post to growthforecast: #{url}, number: #{value}, code: #{res.code}"
     end
   end

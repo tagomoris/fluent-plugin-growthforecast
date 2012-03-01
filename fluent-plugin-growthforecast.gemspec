@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{fluent-plugin-growthforecast}
-  s.version = "0.1.0"
+  s.version = "0.1.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = [%q{TAGOMORI Satoshi}]
-  s.date = %q{2012-02-18}
+  s.date = %q{2012-03-01}
   s.description = %q{Plugin to post numbers to GrowthForecast (by kazeburo)}
   s.email = %q{tagomoris@gmail.com}
   s.extra_rdoc_files = [
@@ -25,6 +25,7 @@ Gem::Specification.new do |s|
     "README.rdoc",
     "Rakefile",
     "VERSION",
+    "fluent-plugin-growthforecast.gemspec",
     "lib/fluent/plugin/out_growthforecast.rb",
     "test/helper.rb",
     "test/plugin/test_out_growthforecast.rb"

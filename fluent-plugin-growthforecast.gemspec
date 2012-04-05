@@ -4,14 +4,14 @@
 # -*- encoding: utf-8 -*-
 
 Gem::Specification.new do |s|
-  s.name = %q{fluent-plugin-growthforecast}
-  s.version = "0.1.1"
+  s.name = "fluent-plugin-growthforecast"
+  s.version = "0.1.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
-  s.authors = [%q{TAGOMORI Satoshi}]
-  s.date = %q{2012-03-01}
-  s.description = %q{Plugin to post numbers to GrowthForecast (by kazeburo)}
-  s.email = %q{tagomoris@gmail.com}
+  s.authors = ["TAGOMORI Satoshi"]
+  s.date = "2012-04-05"
+  s.description = "Plugin to post numbers to GrowthForecast (by kazeburo)"
+  s.email = "tagomoris@gmail.com"
   s.extra_rdoc_files = [
     "LICENSE.txt",
     "README.rdoc"
@@ -30,11 +30,11 @@ Gem::Specification.new do |s|
     "test/helper.rb",
     "test/plugin/test_out_growthforecast.rb"
   ]
-  s.homepage = %q{http://github.com/tagomoris/fluent-plugin-growthforecast}
-  s.require_paths = [%q{lib}]
-  s.rubygems_version = %q{1.8.6}
-  s.summary = %q{Plugin to post numbers to GrowthForecast (by kazeburo)}
-  s.test_files = [%q{test/helper.rb}, %q{test/plugin/test_out_growthforecast.rb}]
+  s.homepage = "http://github.com/tagomoris/fluent-plugin-growthforecast"
+  s.require_paths = ["lib"]
+  s.rubygems_version = "1.8.21"
+  s.summary = "Plugin to post numbers to GrowthForecast (by kazeburo)"
+  s.test_files = ["test/helper.rb", "test/plugin/test_out_growthforecast.rb"]
 
   if s.respond_to? :specification_version then
     s.specification_version = 3

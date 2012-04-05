@@ -91,7 +91,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       res = nil
     end
     unless res and res.is_a?(Net::HTTPSuccess)
-      $log.warn "failed to post to growthforecast: #{url}, number: #{value}, code: #{res.code}"
+      $log.warn "failed to post to growthforecast: #{url}, number: #{value}, code: #{res && res.code}"
     end
   end
 

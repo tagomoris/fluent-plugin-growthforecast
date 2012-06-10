@@ -11,6 +11,10 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   config_param :service, :string
   config_param :section, :string, :default => nil
 
+  config_param :authentication, :string, :default => nil # nil or 'none' or 'basic'
+  config_param :username, :string, :default => ''
+  config_param :password, :string, :default => ''
+
   config_param :name_keys, :string, :default => nil
   config_param :name_key_pattern, :string, :default => nil
 
@@ -39,6 +43,8 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     if @name_key_pattern
       @name_key_pattern = Regexp.new(@name_key_pattern)
     end
+
+    @authentication ||= 'none'
 
     @mode = case @mode
             when 'count' then :count
@@ -83,8 +89,19 @@ class Fluent::GrowthForecastOutput < Fluent::Output
 
   def post(tag, name, value)
     url = format_url(tag,name)
+
+    uri = URI.parse(url)
+    req = Net::HTTP::Post(uri.path)
+    req.set_form_data({'number' => value.to_i.to_s, 'mode' => @mode.to_s})
+    case @authentication
+    when 'basic'
+      req.basic_auth(@username, @password)
+    end
+
     begin
-      res = Net::HTTP.post_form(URI.parse(url), {'number' => value.to_i, 'mode' => @mode.to_s})
+      res = Net::HTTP.start(uri.host, uri.port) do |http|
+        http.request(req)
+      end
     rescue IOError, EOFError, SystemCallError
       # server didn't respond
       $log.warn "Net::HTTP.post_form raises exception: #{$!.class}, '#{$!.message}'"

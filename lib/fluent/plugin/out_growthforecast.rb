@@ -17,12 +17,14 @@ class Fluent::GrowthForecastOutput < Fluent::Output
 
   config_param :name_keys, :string, :default => nil
   config_param :name_key_pattern, :string, :default => nil
+  config_param :name_nested_keys, :string, :default => nil
+  # config_param :name_nested_pattern, :string, :default => nil
 
   config_param :mode, :string, :default => 'gauge' # or count/modified
 
   config_param :remove_prefix, :string, :default => nil
   config_param :tag_for, :string, :default => 'name_prefix' # or 'ignore' or 'section'
-  
+
   def configure(conf)
     super
 
@@ -38,10 +40,13 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       raise Fluent::ConfigError, "cannot specify both of name_keys and name_key_pattern"
     end
     if @name_keys
-      @name_keys = @name_keys.split(',')
+      @name_keys = @name_keys.split(',').map{|s| s.strip}
     end
     if @name_key_pattern
       @name_key_pattern = Regexp.new(@name_key_pattern)
+    end
+    if @name_nested_keys
+      @nneme_nested_keys = @name_nested_keys.split(',').map{|s| s.strip}
     end
 
     @authentication ||= 'none'
@@ -122,6 +127,16 @@ class Fluent::GrowthForecastOutput < Fluent::Output
         @name_keys.each {|name|
           if record[name]
             post(tag, name, record[name])
+          end
+        }
+      }
+    elsif @name_nested_keys
+      es.each{|time, record|
+        @name_nested_keys.each{|name|
+          nested_keys = name.split(/\./).join("][")
+          eval_result = eval("record[#{nested_keys}]")
+          if eval_result
+            post(tag, name, eval_result)
           end
         }
       }

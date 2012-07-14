@@ -33,7 +33,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     end
     @gfurl = @gfapi_url + @service + '/'
 
-    if @name_keys.nil? and @name_key_pattern.nil?
+    if @name_keys.nil? and @name_key_pattern.nil? and @name_nested_keys.nil?
       raise Fluent::ConfigError, "missing both of name_keys and name_key_pattern"
     end
     if not @name_keys.nil? and not @name_key_pattern.nil?
@@ -44,9 +44,6 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     end
     if @name_key_pattern
       @name_key_pattern = Regexp.new(@name_key_pattern)
-    end
-    if @name_nested_keys
-      @nneme_nested_keys = @name_nested_keys.split(',').map{|s| s.strip}
     end
 
     @authentication ||= 'none'

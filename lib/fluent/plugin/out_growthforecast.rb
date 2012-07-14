@@ -45,7 +45,9 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     if @name_key_pattern
       @name_key_pattern = Regexp.new(@name_key_pattern)
     end
-
+    if @name_nested_keys
+      @name_nested_keys = @name_nested_keys.split(',').map{|s| s.strip}
+    end
     @authentication ||= 'none'
 
     @mode = case @mode
@@ -130,8 +132,8 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     elsif @name_nested_keys
       es.each{|time, record|
         @name_nested_keys.each{|name|
-          nested_keys = name.split(/\./).join("][")
-          eval_result = eval("record[#{nested_keys}]")
+          nested_keys = name.split(/\./).join("\"][\"")
+          eval_result = eval("record[\"#{nested_keys}\"]")
           if eval_result
             post(tag, name, eval_result)
           end

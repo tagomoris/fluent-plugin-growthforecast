@@ -18,7 +18,6 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   config_param :name_keys, :string, :default => nil
   config_param :name_key_pattern, :string, :default => nil
   config_param :name_nested_keys, :string, :default => nil
-  # config_param :name_nested_pattern, :string, :default => nil
 
   config_param :mode, :string, :default => 'gauge' # or count/modified
 
@@ -40,15 +39,14 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       raise Fluent::ConfigError, "cannot specify both of name_keys and name_key_pattern"
     end
     if @name_keys
-      @name_keys = @name_keys.split(',').map{|s| s.strip}
+      @name_keys = @name_keys.split(',').map{|m| m.strip}
     end
     if @name_key_pattern
       @name_key_pattern = Regexp.new(@name_key_pattern)
     end
     if @name_nested_keys
-      @name_nested_keys = @name_nested_keys.split(',').map{|s| s.strip}
+      @name_nested_keys = @name_nested_keys.split(',').map{|m| m.strip}
     end
-    @authentication ||= 'none'
 
     @mode = case @mode
             when 'count' then :count
@@ -129,21 +127,21 @@ class Fluent::GrowthForecastOutput < Fluent::Output
           end
         }
       }
-    elsif @name_nested_keys
-      es.each{|time, record|
-        @name_nested_keys.each{|name|
-          nested_keys = name.split(/\./).join("\"][\"")
-          eval_result = eval("record[\"#{nested_keys}\"]")
-          if eval_result
-            post(tag, name, eval_result)
-          end
-        }
-      }
-    else # for name_key_pattern
+    elsif @name_key_pattern
       es.each {|time,record|
         record.keys.each {|key|
           if @name_key_pattern.match(key) and record[key]
             post(tag, key, record[key])
+          end
+        }
+      }
+    else # for name_nested_keys
+      es.each {|time, record|
+        @name_nested_keys.each {|name|
+          nested_keys = name.split(/\./).join("\"][\"")
+          eval_result = eval("record[\"#{nested_keys}\"]")
+          if eval_result
+            post(tag, name, eval_result)
           end
         }
       }

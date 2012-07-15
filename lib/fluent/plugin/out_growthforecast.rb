@@ -13,12 +13,13 @@ class Fluent::GrowthForecastOutput < Fluent::Output
 
   config_param :name_keys, :string, :default => nil
   config_param :name_key_pattern, :string, :default => nil
+  config_param :name_nested_keys, :string, :default => nil
 
   config_param :mode, :string, :default => 'gauge' # or count/modified
 
   config_param :remove_prefix, :string, :default => nil
   config_param :tag_for, :string, :default => 'name_prefix' # or 'ignore' or 'section'
-  
+
   def configure(conf)
     super
 
@@ -27,17 +28,20 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     end
     @gfurl = @gfapi_url + @service + '/'
 
-    if @name_keys.nil? and @name_key_pattern.nil?
+    if @name_keys.nil? and @name_key_pattern.nil? and @name_nested_keys.nil?
       raise Fluent::ConfigError, "missing both of name_keys and name_key_pattern"
     end
     if not @name_keys.nil? and not @name_key_pattern.nil?
       raise Fluent::ConfigError, "cannot specify both of name_keys and name_key_pattern"
     end
     if @name_keys
-      @name_keys = @name_keys.split(',')
+      @name_keys = @name_keys.split(',').map{|m| m.strip}
     end
     if @name_key_pattern
       @name_key_pattern = Regexp.new(@name_key_pattern)
+    end
+    if @name_nested_keys
+      @name_nested_keys = @name_nested_keys.split(',').map{|m| m.strip}
     end
 
     @mode = case @mode
@@ -108,11 +112,21 @@ class Fluent::GrowthForecastOutput < Fluent::Output
           end
         }
       }
-    else # for name_key_pattern
+    elsif @name_key_pattern
       es.each {|time,record|
         record.keys.each {|key|
           if @name_key_pattern.match(key) and record[key]
             post(tag, key, record[key])
+          end
+        }
+      }
+    else # for name_nested_keys
+      es.each {|time, record|
+        @name_nested_keys.each {|name|
+          nested_keys = name.split(/\./).join("\"][\"")
+          eval_result = eval("record[\"#{nested_keys}\"]")
+          if eval_result
+            post(tag, name, eval_result)
           end
         }
       }

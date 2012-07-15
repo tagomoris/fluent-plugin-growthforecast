@@ -127,7 +127,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
           nested_keys = name.split(/\./).join("\"][\"")
           eval_result = eval("record[\"#{nested_keys}\"]")
           if eval_result
-            post(tag, name, eval_result)
+            post(tag, name.gsub(".",'_'), eval_result)
           end
         }
       }

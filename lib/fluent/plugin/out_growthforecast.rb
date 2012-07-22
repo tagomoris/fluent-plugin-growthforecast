@@ -42,8 +42,20 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       @name_keys = @name_keys.split(',').map{|m| m.strip}
     end
     if @name_key_pattern
-      @name_key_pattern = @name_key_pattern.split(@nested_separator).map{|m| Regexp.new(m.strip)}
+      @name_key_pattern = @name_key_pattern.split(@nested_separator).map{|m|
+        m = m.gsub(/^\*/, ".*")
+        m = m.gsub(/^\?/, ".?")
+        reg = ''
+        if m =~ /(\*|\?)$/
+          reg = "^" + m.strip
+        else
+          reg = "^" + m.strip + "$"
+        end
+        Regexp.new(reg)
+      }
     end
+
+    @authentication ||= 'none'
 
     @mode = case @mode
             when 'count' then :count
@@ -90,7 +102,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     url = format_url(tag,name)
     uri = URI.parse(url)
 
-    req = Net::HTTP::Post(uri.path)
+    req = Net::HTTP::Post.new(uri.path)
     req.set_form_data({'number' => value.to_i.to_s, 'mode' => @mode.to_s})
     case @authentication
     when 'basic'
@@ -129,16 +141,17 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       }
     else # for name_key_pattern
       es.each {|time,record|
-        result = nested_keys_regexp(record, @name_key_pattern)
-        if result
-          post(tag, key.join("_"), result)
-        end
+        keys, value = nested_keys_regexp(record, @name_key_pattern)
+        keys.zip(value){|key, val|
+          if val
+            post(tag, key, val)
+          end
+        }
       }
     end
     chain.next
   end
 
-  private
   def nested_keys(record, keys)
     key = keys[0]
     if record[key].is_a?(Hash)
@@ -147,17 +160,25 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     return record[key]
   end
 
-  def nested_keys_regexp(record, keys)
-    key = keys[0]
-    record.keys.each{|k|
-      if key.match(k)
-        if record[k].is_a?(Hash)
-          return nested_keys_regexp(record[k], keys[1..keys.size-1])
+  def nested_keys_regexp(record, regs, search_keys=nil)
+    reg = regs[0]
+    keys = []
+    results = []
+    record.keys.map do |key|
+      if reg.match(key)
+        if record[key].is_a?(Hash)
+          matched_keys = if search_keys
+                           [search_keys.to_s,key.to_s].join("_")
+                         else
+                           key
+                         end
+          keys, results = nested_keys_regexp(record[key], regs[1...regs.size], matched_keys)
         else
-          return record[key]
+          keys << search_keys.to_s+"_"+ key.to_s
+          results << record[key]
         end
       end
-    }
-    nil
+    end
+    return [keys.flatten, results.flatten]
   end
 end

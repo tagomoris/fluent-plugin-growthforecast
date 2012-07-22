@@ -122,7 +122,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
           name = name.split(@nested_separator)
           val = nested_keys(record, name)
           if val
-            post(tag, name, val)
+            post(tag, name.join("_"), val)
           end
         }
       }
@@ -130,7 +130,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       es.each {|time,record|
         result = nested_keys_regexp(record, @name_key_pattern)
         if result
-          post(tag, key, result)
+          post(tag, key.join("_"), result)
         end
       }
     end

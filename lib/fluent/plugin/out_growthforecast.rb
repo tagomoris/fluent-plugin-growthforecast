@@ -11,9 +11,13 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   config_param :service, :string
   config_param :section, :string, :default => nil
 
+  config_param :authentication, :string, :default => nil # nil or 'none' or 'basic'
+  config_param :username, :string, :default => nil
+  config_param :password, :string, :default => nil
+
   config_param :name_keys, :string, :default => nil
   config_param :name_key_pattern, :string, :default => nil
-  config_param :name_nested_keys, :string, :default => nil
+  config_param :nested_separator, :string, :default => nil
 
   config_param :mode, :string, :default => 'gauge' # or count/modified
 
@@ -28,7 +32,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     end
     @gfurl = @gfapi_url + @service + '/'
 
-    if @name_keys.nil? and @name_key_pattern.nil? and @name_nested_keys.nil?
+    if @name_keys.nil? and @name_key_pattern.nil?
       raise Fluent::ConfigError, "missing both of name_keys and name_key_pattern"
     end
     if not @name_keys.nil? and not @name_key_pattern.nil?
@@ -38,10 +42,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       @name_keys = @name_keys.split(',').map{|m| m.strip}
     end
     if @name_key_pattern
-      @name_key_pattern = Regexp.new(@name_key_pattern)
-    end
-    if @name_nested_keys
-      @name_nested_keys = @name_nested_keys.split(',').map{|m| m.strip}
+      @name_key_pattern = @name_key_pattern.split(@nested_separator).map{|m| Regexp.new(m.strip)}
     end
 
     @mode = case @mode
@@ -87,9 +88,18 @@ class Fluent::GrowthForecastOutput < Fluent::Output
 
   def post(tag, name, value)
     url = format_url(tag,name)
+    req = Net::HTTP::Post(uri.path)
+    req.set_form_data({'number' => value.to_i.to_s, 'mode' => @mode.to_s})
+    case @authentication
+    when 'basic'
+      req.basic_auth(@username, @password)
+    end
 
     begin
-      res = Net::HTTP.post_form(URI.parse(url), {'number' => value.to_i, 'mode' => @mode.to_s})
+      res = Net::HTTP.start(uri.host, uri.port) do |http|
+        http.request(req)
+      end
+      uri = URI.parse(url)
     rescue IOError, EOFError, SystemCallError
       # server didn't respond
       $log.warn "Net::HTTP.post_form raises exception: #{$!.class}, '#{$!.message}'"
@@ -108,30 +118,45 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     if @name_keys
       es.each {|time,record|
         @name_keys.each {|name|
-          if record[name]
-            post(tag, name, record[name])
+          val = nil
+          name = name.split(@nested_separator)
+          val = nested_keys(record, name)
+          if val
+            post(tag, name, val)
           end
         }
       }
-    elsif @name_key_pattern
+    else # for name_key_pattern
       es.each {|time,record|
-        record.keys.each {|key|
-          if @name_key_pattern.match(key) and record[key]
-            post(tag, key, record[key])
-          end
-        }
-      }
-    else # for name_nested_keys
-      es.each {|time, record|
-        @name_nested_keys.each {|name|
-          nested_keys = name.split(/\./).join("\"][\"")
-          eval_result = eval("record[\"#{nested_keys}\"]")
-          if eval_result
-            post(tag, name.gsub(".",'_'), eval_result)
-          end
-        }
+        result = nested_keys_regexp(record, @name_key_pattern)
+        if result
+          post(tag, key, result)
+        end
       }
     end
     chain.next
+  end
+
+  private
+  def nested_keys(record, keys)
+    key = keys[0]
+    if record[key].is_a?(Hash)
+      return nested_keys(record[key], keys[1..keys.size-1])
+    end
+    return record[key]
+  end
+
+  def nested_keys_regexp(record, keys)
+    key = keys[0]
+    record.keys.each{|k|
+      if key.match(k)
+        if record[k].is_a?(Hash)
+          return nested_keys_regexp(record[k], keys[1..keys.size-1])
+        else
+          return record[key]
+        end
+      end
+    }
+    nil
   end
 end

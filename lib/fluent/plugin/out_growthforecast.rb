@@ -12,17 +12,18 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   config_param :section, :string, :default => nil
 
   config_param :authentication, :string, :default => nil # nil or 'none' or 'basic'
-  config_param :username, :string, :default => ''
-  config_param :password, :string, :default => ''
+  config_param :username, :string, :default => nil
+  config_param :password, :string, :default => nil
 
   config_param :name_keys, :string, :default => nil
   config_param :name_key_pattern, :string, :default => nil
+  config_param :nested_separator, :string, :default => nil
 
   config_param :mode, :string, :default => 'gauge' # or count/modified
 
   config_param :remove_prefix, :string, :default => nil
   config_param :tag_for, :string, :default => 'name_prefix' # or 'ignore' or 'section'
-  
+
   def configure(conf)
     super
 
@@ -38,10 +39,20 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       raise Fluent::ConfigError, "cannot specify both of name_keys and name_key_pattern"
     end
     if @name_keys
-      @name_keys = @name_keys.split(',')
+      @name_keys = @name_keys.split(',').map{|m| m.strip}
     end
     if @name_key_pattern
-      @name_key_pattern = Regexp.new(@name_key_pattern)
+      @name_key_pattern = @name_key_pattern.split(@nested_separator).map{|m|
+        m = m.gsub(/^\*/, ".*")
+        m = m.gsub(/^\?/, ".?")
+        reg = ''
+        if m =~ /(\*|\?)$/
+          reg = "^" + m.strip
+        else
+          reg = "^" + m.strip + "$"
+        end
+        Regexp.new(reg)
+      }
     end
 
     @authentication ||= 'none'
@@ -89,9 +100,9 @@ class Fluent::GrowthForecastOutput < Fluent::Output
 
   def post(tag, name, value)
     url = format_url(tag,name)
-
     uri = URI.parse(url)
-    req = Net::HTTP::Post(uri.path)
+
+    req = Net::HTTP::Post.new(uri.path)
     req.set_form_data({'number' => value.to_i.to_s, 'mode' => @mode.to_s})
     case @authentication
     when 'basic'
@@ -120,20 +131,54 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     if @name_keys
       es.each {|time,record|
         @name_keys.each {|name|
-          if record[name]
-            post(tag, name, record[name])
+          val = nil
+          name = name.split(@nested_separator)
+          val = nested_keys(record, name)
+          if val
+            post(tag, name.join("_"), val)
           end
         }
       }
     else # for name_key_pattern
       es.each {|time,record|
-        record.keys.each {|key|
-          if @name_key_pattern.match(key) and record[key]
-            post(tag, key, record[key])
+        keys, value = nested_keys_regexp(record, @name_key_pattern)
+        keys.zip(value){|key, val|
+          if val
+            post(tag, key, val)
           end
         }
       }
     end
     chain.next
+  end
+
+  def nested_keys(record, keys)
+    key = keys[0]
+    if record[key].is_a?(Hash)
+      return nested_keys(record[key], keys[1..keys.size-1])
+    end
+    return record[key]
+  end
+
+  def nested_keys_regexp(record, regs, search_keys=nil)
+    reg = regs[0]
+    keys = []
+    results = []
+    record.keys.map do |key|
+      if reg.match(key)
+        if record[key].is_a?(Hash)
+          matched_keys = if search_keys
+                           [search_keys.to_s,key.to_s].join("_")
+                         else
+                           key
+                         end
+          keys, results = nested_keys_regexp(record[key], regs[1...regs.size], matched_keys)
+        else
+          keys << search_keys.to_s+"_"+ key.to_s
+          results << record[key]
+        end
+      end
+    end
+    return [keys.flatten, results.flatten]
   end
 end

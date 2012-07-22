@@ -88,6 +88,8 @@ class Fluent::GrowthForecastOutput < Fluent::Output
 
   def post(tag, name, value)
     url = format_url(tag,name)
+    uri = URI.parse(url)
+
     req = Net::HTTP::Post(uri.path)
     req.set_form_data({'number' => value.to_i.to_s, 'mode' => @mode.to_s})
     case @authentication
@@ -99,7 +101,6 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       res = Net::HTTP.start(uri.host, uri.port) do |http|
         http.request(req)
       end
-      uri = URI.parse(url)
     rescue IOError, EOFError, SystemCallError
       # server didn't respond
       $log.warn "Net::HTTP.post_form raises exception: #{$!.class}, '#{$!.message}'"

@@ -77,13 +77,14 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   end
 
   def format_url(tag, name)
+    name_esc = URI.escape(name)
     case @tag_for
     when :ignore
-      @gfurl + @section + '/' + name
+      @gfurl + @section + '/' + name_esc
     when :section
-      @gfurl + tag + '/' + name
+      @gfurl + tag + '/' + name_esc
     when :name_prefix
-      @gfurl + @section + '/' + tag + '_' + name
+      @gfurl + @section + '/' + tag + '_' + name_esc
     end
   end
 

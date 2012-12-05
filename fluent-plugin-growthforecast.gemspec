@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = "fluent-plugin-growthforecast"
-  s.version = "0.1.3"
+  s.version = "0.1.4"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["TAGOMORI Satoshi"]
-  s.date = "2012-12-04"
+  s.date = "2012-12-05"
   s.description = "Plugin to post numbers to GrowthForecast (by kazeburo)"
   s.email = "tagomoris@gmail.com"
   s.extra_rdoc_files = [

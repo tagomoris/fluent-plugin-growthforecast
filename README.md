@@ -1,20 +1,17 @@
-= fluent-plugin-growthforecast
+# fluent-plugin-growthforecast
 
-== Component
-
-=== GrowthForecastOutput
+## GrowthForecastOutput
 
 Plugin to output numbers(metrics) to 'GrowthForecast', metrics drawing tool over HTTP.
 
 About GrowthForecast, see:
-- Github: https://github.com/kazeburo/growthforecast
-- Japanese blog post by @kazeburo: http://blog.nomadscafe.jp/2011/12/growthforecast.html
+* Github: https://github.com/kazeburo/growthforecast
+* Product site (japanese): http://kazeburo.github.com/GrowthForecast/
+* Japanese blog post by @kazeburo: http://blog.nomadscafe.jp/2011/12/growthforecast.html
 
-GrowthForecast is very simple but useful tool to draw graphs what we want, with GrowthForecastOutput and Fluentd.
+GrowthForecast is very simple and powerful tool to draw graphs what we want, with GrowthForecastOutput and Fluentd.
 
-== Configuration
-
-=== GrowthForecastOutput
+### Configuration
 
 For messages such as:
     tag:metrics {"field1":300, "field2":20, "field3diff":-30}
@@ -30,10 +27,10 @@ Configuration example for graphs in growthforecast with POST api url 'http://gro
     </match>
 
 With this configuration, out_growthforecast posts urls below.
-- http://growthforecast.local/api/service1/metrics1/metrics_field1
-- http://growthforecast.local/api/service1/metrics1/metrics_field2
-- http://growthforecast.local/api/service1/metrics1/metrics_field3diff
 
+    http://growthforecast.local/api/service1/metrics1/metrics_field1
+    http://growthforecast.local/api/service1/metrics1/metrics_field2
+    http://growthforecast.local/api/service1/metrics1/metrics_field3diff
 
 If you want to use tags for 'section' in GrowthForecast, use 'tag_for' options and remove_prefix (and not to set 'section').
 
@@ -48,12 +45,13 @@ If you want to use tags for 'section' in GrowthForecast, use 'tag_for' options a
 
 'mode' option available with 'gauge'(default), 'count', 'modified', just same as 'mode' of GrowthForecast POST parameter.
 
-== TODO
+## TODO
 
-- consider what to do next
-- patches welcome!
+* tests
+* patches welcome!
 
-== Copyright
+## Copyright
 
-Copyright:: Copyright (c) 2012- TAGOMORI Satoshi (tagomoris)
-License::   Apache License, Version 2.0
+* Copyright (c) 2012- TAGOMORI Satoshi (tagomoris)
+* License
+  * Apache License, Version 2.0

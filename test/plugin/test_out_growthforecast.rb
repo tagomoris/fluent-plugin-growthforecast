@@ -143,6 +143,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   # ]
   def test_emit_3
     d = create_driver(CONFIG3, 'test.metrics')
+    # recent ruby's Hash saves elements order....
     d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
     d.run
 
@@ -165,10 +166,51 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 'field3', v3rd[:name]
   end
 
+  # CONFIG4 = %[
+  #     gfapi_url http://127.0.0.1:5125/api/
+  #     service   service
+  #     section   metrics
+  #     name_keys field1,field2,otherfield
+  #     tag_for   name_prefix
+  # ]
+  def test_emit_4_auth
+    @auth = true # enable authentication of dummy server
+
+    d = create_driver(CONFIG1, 'test.metrics')
+    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    d.run # failed in background, and output warn log
+
+    assert_equal 0, @posted.size
+    assert_equal 3, @prohibited
+
+    d = create_driver(CONFIG1 + %[
+      authentication basic
+      username alice
+      password wrong_password
+    ], 'test.metrics')
+    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    d.run # failed in background, and output warn log
+
+    assert_equal 0, @posted.size
+    assert_equal 6, @prohibited
+
+    d = create_driver(CONFIG1 + %[
+      authentication basic
+      username alice
+      password secret!
+    ], 'test.metrics')
+    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    d.run # failed in background, and output warn log
+
+    assert_equal 6, @prohibited
+    assert_equal 3, @posted.size
+  end
+
   # setup / teardown for servers
   def setup
     Fluent::Test.setup
     @posted = []
+    @prohibited = 0
     @auth = false
     @dummy_server_thread = Thread.new do
       srv = if ENV['VERBOSE']
@@ -188,6 +230,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
             # ok, authorized
           elsif @auth
             res.status = 403
+            @prohibited += 1
             next
           else
             # ok, authorization not required

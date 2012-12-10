@@ -58,9 +58,21 @@ If you want to use tags for `section` in GrowthForecast, use `tag_for` options a
 
 This configuration matches only with metrics.field1, metrics.key20, .... and doesn't match with metrics.field or metrics.foo.
 
+If your GrowthForecast protected with basic authentication, specify `authentication` option:
+
+    <match metrics.**>
+      type growthforecast
+      gfapi_url http://growthforecast.protected.anywhere.example.com/api/
+      service   yourservice
+      tag_for   section
+      name_keys fieldname
+      authentication basic
+      username yourusername
+      password secret!
+    </match>
+
 ## TODO
 
-* tests
 * patches welcome!
 
 ## Copyright

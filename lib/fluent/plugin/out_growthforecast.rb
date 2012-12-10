@@ -71,6 +71,11 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   end
 
   def format_url(tag, name)
+    if @remove_prefix and
+        ( (tag.start_with?(@removed_prefix_string) and tag.length > @removed_length) or tag == @remove_prefix)
+      tag = tag[@removed_length..-1]
+    end
+
     name_esc = URI.escape(name)
     case @tag_for
     when :ignore
@@ -97,10 +102,6 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   end
 
   def emit(tag, es, chain)
-    if @remove_prefix and
-        ( (tag.start_with?(@removed_prefix_string) and tag.length > @removed_length) or tag == @remove_prefix)
-      tag = tag[@removed_length..-1]
-    end
     if @name_keys
       es.each {|time,record|
         @name_keys.each {|name|

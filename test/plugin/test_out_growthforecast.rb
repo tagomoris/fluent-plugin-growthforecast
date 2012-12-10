@@ -67,8 +67,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 'test.', d.instance.instance_eval{ @removed_prefix_string }
     assert_equal :modified, d.instance.mode
 
-    #TODO: FIXME later (replace remove_prefix procedure from emit into format_url
-    # assert_equal 'http://127.0.0.1:5125/api/service/data1/field1', d.instance.format_url('test.data1', 'field1')
+    assert_equal 'http://127.0.0.1:5125/api/service/data1/field1', d.instance.format_url('test.data1', 'field1')
   end
 
   # CONFIG1 = %[

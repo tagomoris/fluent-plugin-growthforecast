@@ -32,7 +32,7 @@ With this configuration, out_growthforecast posts urls below.
     http://growthforecast.local/api/service1/metrics1/metrics_field2
     http://growthforecast.local/api/service1/metrics1/metrics_field3diff
 
-If you want to use tags for 'section' in GrowthForecast, use 'tag_for' options and remove_prefix (and not to set 'section').
+If you want to use tags for `section` in GrowthForecast, use `tag_for` options and `remove_prefix` (and not to set `section`).
 
     <match metrics.**>
       type growthforecast
@@ -43,7 +43,20 @@ If you want to use tags for 'section' in GrowthForecast, use 'tag_for' options a
       remove_prefix metrics
     </match>
 
-'mode' option available with 'gauge'(default), 'count', 'modified', just same as 'mode' of GrowthForecast POST parameter.
+`mode` option available with `gauge`(default), `count`, `modified`, just same as `mode` of GrowthForecast POST parameter.
+
+`name_key_pattern REGEXP` available instead of `name_keys` like this:
+
+    <match metrics.**>
+      type growthforecast
+      gfapi_url http://growthforecast.local/api/
+      service   service1
+      tag_for   section    # or 'name_prefix'(default) or 'ignore'
+      remove_prefix metrics
+      name_key_pattern ^(field|key)\d+$
+    </match>
+
+This configuration matches only with metrics.field1, metrics.key20, .... and doesn't match with metrics.field or metrics.foo.
 
 ## TODO
 

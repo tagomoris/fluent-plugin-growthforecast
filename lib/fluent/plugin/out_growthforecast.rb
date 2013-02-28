@@ -8,7 +8,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   end
 
   config_param :gfapi_url, :string # growth.forecast.local/api/
-  config_param :service, :string
+  config_param :service, :string, :default => nil
   config_param :section, :string, :default => nil
 
   config_param :name_keys, :string, :default => nil
@@ -17,7 +17,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   config_param :mode, :string, :default => 'gauge' # or count/modified
 
   config_param :remove_prefix, :string, :default => nil
-  config_param :tag_for, :string, :default => 'name_prefix' # or 'ignore' or 'section'
+  config_param :tag_for, :string, :default => 'name_prefix' # or 'ignore' or 'section' or 'service'
   
   config_param :authentication, :string, :default => nil # nil or 'none' or 'basic'
   config_param :username, :string, :default => ''
@@ -29,7 +29,6 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     if @gfapi_url !~ /\/api\/\Z/
       raise Fluent::ConfigError, "gfapi_url must end with /api/"
     end
-    @gfurl = @gfapi_url + @service + '/'
 
     if @name_keys.nil? and @name_key_pattern.nil?
       raise Fluent::ConfigError, "missing both of name_keys and name_key_pattern"
@@ -53,11 +52,15 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     @tag_for = case @tag_for
                when 'ignore' then :ignore
                when 'section' then :section
+               when 'service' then :service
                else
                  :name_prefix
                end
     if @tag_for != :section and @section.nil?
       raise Fluent::ConfigError, "section parameter is needed when tag_for is not 'section'"
+    end
+    if @tag_for != :service and @service.nil?
+      raise Fluent::ConfigError, "service parameter is needed when tag_for is not 'secrvice'"
     end
 
     if @remove_prefix
@@ -89,11 +92,13 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     name_esc = URI.escape(name)
     case @tag_for
     when :ignore
-      @gfurl + @section + '/' + name_esc
+      @gfapi_url + @service + '/' + @section + '/' + name_esc
     when :section
-      @gfurl + tag + '/' + name_esc
+      @gfapi_url + @service + '/' + tag + '/' + name_esc
+    when :service
+      @gfapi_url + tag + '/' + @section + '/' + name_esc
     when :name_prefix
-      @gfurl + @section + '/' + tag + '_' + name_esc
+      @gfapi_url + @service + '/' + @section + '/' + tag + '_' + name_esc
     end
   end
 

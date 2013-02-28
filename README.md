@@ -32,14 +32,14 @@ With this configuration, out_growthforecast posts urls below.
     http://growthforecast.local/api/service1/metrics1/metrics_field2
     http://growthforecast.local/api/service1/metrics1/metrics_field3diff
 
-If you want to use tags for `section` in GrowthForecast, use `tag_for` options and `remove_prefix` (and not to set `section`).
+If you want to use tags for `section` or `service`  in GrowthForecast, use `tag_for` options and `remove_prefix` (and not to set the `section` or `service` that the value of 'tag_for' used to.).
 
     <match metrics.**>
       type growthforecast
       gfapi_url http://growthforecast.local/api/
       service   service1
       name_keys field1,field2,field3diff
-      tag_for   section    # or 'name_prefix'(default) or 'ignore'
+      tag_for   section    # or 'name_prefix'(default) or 'ignore' or 'service'
       remove_prefix metrics
     </match>
 
@@ -51,7 +51,7 @@ If you want to use tags for `section` in GrowthForecast, use `tag_for` options a
       type growthforecast
       gfapi_url http://growthforecast.local/api/
       service   service1
-      tag_for   section    # or 'name_prefix'(default) or 'ignore'
+      tag_for   section    # or 'name_prefix'(default) or 'ignore' or 'service'
       remove_prefix metrics
       name_key_pattern ^(field|key)\d+$
     </match>

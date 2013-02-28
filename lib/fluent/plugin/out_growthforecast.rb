@@ -60,7 +60,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       raise Fluent::ConfigError, "section parameter is needed when tag_for is not 'section'"
     end
     if @tag_for != :service and @service.nil?
-      raise Fluent::ConfigError, "service parameter is needed when tag_for is not 'secrvice'"
+      raise Fluent::ConfigError, "service parameter is needed when tag_for is not 'service'"
     end
 
     if @remove_prefix

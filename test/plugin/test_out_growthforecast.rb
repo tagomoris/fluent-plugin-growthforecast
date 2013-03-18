@@ -6,24 +6,24 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
 
   CONFIG1 = %[
       gfapi_url http://127.0.0.1:5125/api/
-      service   service
-      section   metrics
-      name_keys field1,field2,otherfield
+      service   service name
+      section   metrics name
+      name_keys field1,field2,other field
       tag_for   name_prefix
   ]
 
   CONFIG2 = %[
       gfapi_url http://127.0.0.1:5125/api/
-      service   service
-      section   metrics
+      service   service name
+      section   metrics name
       tag_for   ignore
-      name_keys field1,field2,otherfield
+      name_keys field1,field2,other field
       mode count
   ]
 
   CONFIG3 = %[
       gfapi_url http://127.0.0.1:5125/api/
-      service   service
+      service   service name
       tag_for   section
       remove_prefix test
       name_key_pattern ^(field|key)\\d+$
@@ -37,29 +37,29 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   def test_configure_and_format_url
     d = create_driver
     assert_equal 'http://127.0.0.1:5125/api/', d.instance.gfapi_url
-    assert_equal 'service', d.instance.service
-    assert_equal 'metrics', d.instance.section
-    assert_equal ['field1', 'field2', 'otherfield'], d.instance.name_keys
+    assert_equal 'service name', d.instance.service
+    assert_equal 'metrics name', d.instance.section
+    assert_equal ['field1', 'field2', 'other field'], d.instance.name_keys
     assert_nil d.instance.remove_prefix
     assert_equal :name_prefix, d.instance.tag_for
     assert_equal :gauge, d.instance.mode
 
-    assert_equal 'http://127.0.0.1:5125/api/service/metrics/test.data1_field1', d.instance.format_url('test.data1', 'field1')
+    assert_equal 'http://127.0.0.1:5125/api/service%20name/metrics%20name/test.data1_field1', d.instance.format_url('test.data1', 'field1')
 
     d = create_driver(CONFIG2)
     assert_equal 'http://127.0.0.1:5125/api/', d.instance.gfapi_url
-    assert_equal 'service', d.instance.service
-    assert_equal 'metrics', d.instance.section
-    assert_equal ['field1', 'field2', 'otherfield'], d.instance.name_keys
+    assert_equal 'service name', d.instance.service
+    assert_equal 'metrics name', d.instance.section
+    assert_equal ['field1', 'field2', 'other field'], d.instance.name_keys
     assert_nil d.instance.remove_prefix
     assert_equal :ignore, d.instance.tag_for
     assert_equal :count, d.instance.mode
 
-    assert_equal 'http://127.0.0.1:5125/api/service/metrics/field1', d.instance.format_url('test.data1', 'field1')
+    assert_equal 'http://127.0.0.1:5125/api/service%20name/metrics%20name/field1', d.instance.format_url('test.data1', 'field1')
 
     d = create_driver(CONFIG3)
     assert_equal 'http://127.0.0.1:5125/api/', d.instance.gfapi_url
-    assert_equal 'service', d.instance.service
+    assert_equal 'service name', d.instance.service
     assert_nil d.instance.section
     assert_equal Regexp.new('^(field|key)\d+$'), d.instance.name_key_pattern
     assert_equal 'test', d.instance.remove_prefix
@@ -67,19 +67,19 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 'test.', d.instance.instance_eval{ @removed_prefix_string }
     assert_equal :modified, d.instance.mode
 
-    assert_equal 'http://127.0.0.1:5125/api/service/data1/field1', d.instance.format_url('test.data1', 'field1')
+    assert_equal 'http://127.0.0.1:5125/api/service%20name/data1/field1', d.instance.format_url('test.data1', 'field1')
   end
 
   # CONFIG1 = %[
   #     gfapi_url http://127.0.0.1:5125/api/
-  #     service   service
-  #     section   metrics
-  #     name_keys field1,field2,otherfield
+  #     service   service name
+  #     section   metrics name
+  #     name_keys field1,field2,other field
   #     tag_for   name_prefix
   # ]
   def test_emit_1
     d = create_driver(CONFIG1, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'other field' => 1 })
     d.run
 
     assert_equal 3, @posted.size
@@ -90,28 +90,28 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 50, v1st[:data][:number]
     assert_equal 'gauge', v1st[:data][:mode]
     assert_nil v1st[:auth]
-    assert_equal 'service', v1st[:service]
-    assert_equal 'metrics', v1st[:section]
+    assert_equal 'service name', v1st[:service]
+    assert_equal 'metrics name', v1st[:section]
     assert_equal 'test.metrics_field1', v1st[:name]
 
     assert_equal 20, v2nd[:data][:number]
     assert_equal 'test.metrics_field2', v2nd[:name]
 
     assert_equal 1, v3rd[:data][:number]
-    assert_equal 'test.metrics_otherfield', v3rd[:name]
+    assert_equal 'test.metrics_other field', v3rd[:name]
   end
 
   # CONFIG2 = %[
   #     gfapi_url http://127.0.0.1:5125/api/
-  #     service   service
-  #     section   metrics
+  #     service   service name
+  #     section   metrics name
   #     tag_for   ignore
-  #     name_keys field1,field2,otherfield
+  #     name_keys field1,field2,other field
   #     mode count
   # ]
   def test_emit_2
     d = create_driver(CONFIG2, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'other field' => 1 })
     d.run
 
     assert_equal 3, @posted.size
@@ -122,29 +122,29 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 50, v1st[:data][:number]
     assert_equal 'count', v1st[:data][:mode]
     assert_nil v1st[:auth]
-    assert_equal 'service', v1st[:service]
-    assert_equal 'metrics', v1st[:section]
+    assert_equal 'service name', v1st[:service]
+    assert_equal 'metrics name', v1st[:section]
     assert_equal 'field1', v1st[:name]
 
     assert_equal 20, v2nd[:data][:number]
     assert_equal 'field2', v2nd[:name]
 
     assert_equal 1, v3rd[:data][:number]
-    assert_equal 'otherfield', v3rd[:name]
+    assert_equal 'other field', v3rd[:name]
   end
 
   # CONFIG3 = %[
   #     gfapi_url http://127.0.0.1:5125/api/
-  #     service   service
+  #     service   service name
   #     tag_for   section
   #     remove_prefix test
   #     name_key_pattern ^(field|key)\\d+$
   #     mode modified
   # ]
   def test_emit_3
-    d = create_driver(CONFIG3, 'test.metrics')
+    d = create_driver(CONFIG3, 'test.metrics name')
     # recent ruby's Hash saves elements order....
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'other field' => 1 })
     d.run
 
     assert_equal 3, @posted.size
@@ -155,8 +155,8 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 50, v1st[:data][:number]
     assert_equal 'modified', v1st[:data][:mode]
     assert_nil v1st[:auth]
-    assert_equal 'service', v1st[:service]
-    assert_equal 'metrics', v1st[:section]
+    assert_equal 'service name', v1st[:service]
+    assert_equal 'metrics name', v1st[:section]
     assert_equal 'field1', v1st[:name]
 
     assert_equal 20, v2nd[:data][:number]
@@ -168,16 +168,16 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
 
   # CONFIG4 = %[
   #     gfapi_url http://127.0.0.1:5125/api/
-  #     service   service
-  #     section   metrics
-  #     name_keys field1,field2,otherfield
+  #     service   service name
+  #     section   metrics name
+  #     name_keys field1,field2,other field
   #     tag_for   name_prefix
   # ]
   def test_emit_4_auth
     @auth = true # enable authentication of dummy server
 
     d = create_driver(CONFIG1, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'other field' => 1 })
     d.run # failed in background, and output warn log
 
     assert_equal 0, @posted.size
@@ -188,7 +188,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       username alice
       password wrong_password
     ], 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'other field' => 1 })
     d.run # failed in background, and output warn log
 
     assert_equal 0, @posted.size
@@ -199,7 +199,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       username alice
       password secret!
     ], 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'other field' => 1 })
     d.run # failed in background, and output warn log
 
     assert_equal 6, @prohibited
@@ -220,7 +220,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
               WEBrick::HTTPServer.new({:BindAddress => '127.0.0.1', :Port => GF_TEST_LISTEN_PORT, :Logger => logger, :AccessLog => []})
             end
       begin
-        srv.mount_proc('/api/service/metrics') { |req,res| # /api/:service/:section/:name
+        srv.mount_proc('/api') { |req,res| # /api/:service/:section/:name
           unless req.request_method == 'POST'
             res.status = 405
             res.body = 'request method mismatch'
@@ -236,7 +236,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
             # ok, authorization not required
           end
 
-          req.path =~ /^\/api\/(service)\/(metrics)\/(.*)$/
+          req.path =~ /^\/api\/([^\/]*)\/([^\/]*)\/(.*)$/
           service = $1
           section = $2
           graph_name = $3
@@ -295,23 +295,23 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     client = Net::HTTP.start(host, port)
 
     assert_equal '200', client.request_get('/').code
-    assert_equal '200', client.request_post('/api/service/metrics/hoge', 'number=1&mode=gauge').code
+    assert_equal '200', client.request_post('/api/service%20name/metrics%20name/hoge', 'number=1&mode=gauge').code
 
     assert_equal 1, @posted.size
 
     assert_equal 1, @posted[0][:data][:number]
     assert_equal 'gauge', @posted[0][:data][:mode]
     assert_nil @posted[0][:auth]
-    assert_equal 'service', @posted[0][:service]
-    assert_equal 'metrics', @posted[0][:section]
+    assert_equal 'service name', @posted[0][:service]
+    assert_equal 'metrics name', @posted[0][:section]
     assert_equal 'hoge', @posted[0][:name]
 
     @auth = true
 
-    assert_equal '403', client.request_post('/api/service/metrics/pos', 'number=30&mode=gauge').code
+    assert_equal '403', client.request_post('/api/service%20name/metrics%20name/pos', 'number=30&mode=gauge').code
 
     req_with_auth = lambda do |number, mode, user, pass|
-      url = URI.parse("http://#{host}:#{port}/api/service/metrics/pos")
+      url = URI.parse("http://#{host}:#{port}/api/service%20name/metrics%20name/pos")
       req = Net::HTTP::Post.new(url.path)
       req.basic_auth user, pass
       req.set_form_data({'number'=>number, 'mode'=>mode})

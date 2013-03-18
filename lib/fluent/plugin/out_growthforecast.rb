@@ -1,3 +1,5 @@
+require 'uri'
+
 class Fluent::GrowthForecastOutput < Fluent::Output
   Fluent::Plugin.register_output('growthforecast', self)
 
@@ -29,7 +31,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     if @gfapi_url !~ /\/api\/\Z/
       raise Fluent::ConfigError, "gfapi_url must end with /api/"
     end
-    @gfurl = @gfapi_url + @service + '/'
+    @gfurl = @gfapi_url + e(@service) + '/'
 
     if @name_keys.nil? and @name_key_pattern.nil?
       raise Fluent::ConfigError, "missing both of name_keys and name_key_pattern"
@@ -86,14 +88,13 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       tag = tag[@removed_length..-1]
     end
 
-    name_esc = URI.escape(name)
     case @tag_for
     when :ignore
-      @gfurl + @section + '/' + name_esc
+      @gfurl + e(@section) + '/' + e(name)
     when :section
-      @gfurl + tag + '/' + name_esc
+      @gfurl + e(tag) + '/' + e(name)
     when :name_prefix
-      @gfurl + @section + '/' + tag + '_' + name_esc
+      @gfurl + e(@section) + '/' + e(tag) + '_' + e(name)
     end
   end
 
@@ -136,5 +137,9 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       }
     end
     chain.next
+  end
+
+  def e(str)
+    URI.escape(str) if str
   end
 end

@@ -116,9 +116,12 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       end
       req.set_form_data({'number' => value.to_i, 'mode' => @mode.to_s})
       http = Net::HTTP.new(url.host, url.port)
-      http.use_ssl = @ssl
-      http.verify_mode = OpenSSL::SSL::VERIFY_NONE unless @verify_ssl
-
+      if @ssl
+        http.use_ssl = true
+        unless @verify_ssl
+          http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        end
+      end
       res = http.start {|http| http.request(req) }
     rescue IOError, EOFError, SystemCallError
       # server didn't respond

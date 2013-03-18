@@ -6,24 +6,24 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
 
   CONFIG1 = %[
       gfapi_url http://127.0.0.1:5125/api/
-      service   service
-      section   metrics
-      name_keys field1,field2,otherfield
+      service   service name
+      section   metrics name
+      name_keys field1,field2,other field
       tag_for   name_prefix
   ]
 
   CONFIG2 = %[
       gfapi_url http://127.0.0.1:5125/api/
-      service   service
-      section   metrics
+      service   service name
+      section   metrics name
       tag_for   ignore
-      name_keys field1,field2,otherfield
+      name_keys field1,field2,other field
       mode count
   ]
 
   CONFIG3 = %[
       gfapi_url http://127.0.0.1:5125/api/
-      service   service
+      service   service name
       tag_for   section
       remove_prefix test
       name_key_pattern ^(field|key)\\d+$
@@ -37,9 +37,9 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   def test_configure_and_format_url
     d = create_driver
     assert_equal 'http://127.0.0.1:5125/api/', d.instance.gfapi_url
-    assert_equal 'service', d.instance.service
-    assert_equal 'metrics', d.instance.section
-    assert_equal ['field1', 'field2', 'otherfield'], d.instance.name_keys
+    assert_equal 'service name', d.instance.service
+    assert_equal 'metrics name', d.instance.section
+    assert_equal ['field1', 'field2', 'other field'], d.instance.name_keys
     assert_nil d.instance.remove_prefix
     assert_equal :name_prefix, d.instance.tag_for
     assert_equal :gauge, d.instance.mode
@@ -48,9 +48,9 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
 
     d = create_driver(CONFIG2)
     assert_equal 'http://127.0.0.1:5125/api/', d.instance.gfapi_url
-    assert_equal 'service', d.instance.service
-    assert_equal 'metrics', d.instance.section
-    assert_equal ['field1', 'field2', 'otherfield'], d.instance.name_keys
+    assert_equal 'service name', d.instance.service
+    assert_equal 'metrics name', d.instance.section
+    assert_equal ['field1', 'field2', 'other field'], d.instance.name_keys
     assert_nil d.instance.remove_prefix
     assert_equal :ignore, d.instance.tag_for
     assert_equal :count, d.instance.mode
@@ -59,7 +59,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
 
     d = create_driver(CONFIG3)
     assert_equal 'http://127.0.0.1:5125/api/', d.instance.gfapi_url
-    assert_equal 'service', d.instance.service
+    assert_equal 'service name', d.instance.service
     assert_nil d.instance.section
     assert_equal Regexp.new('^(field|key)\d+$'), d.instance.name_key_pattern
     assert_equal 'test', d.instance.remove_prefix
@@ -79,7 +79,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   # ]
   def test_emit_1
     d = create_driver(CONFIG1, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'other field' => 1 })
     d.run
 
     assert_equal 3, @posted.size
@@ -90,8 +90,8 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 50, v1st[:data][:number]
     assert_equal 'gauge', v1st[:data][:mode]
     assert_nil v1st[:auth]
-    assert_equal 'service', v1st[:service]
-    assert_equal 'metrics', v1st[:section]
+    assert_equal 'service name', v1st[:service]
+    assert_equal 'metrics name', v1st[:section]
     assert_equal 'test.metrics_field1', v1st[:name]
 
     assert_equal 20, v2nd[:data][:number]
@@ -111,7 +111,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   # ]
   def test_emit_2
     d = create_driver(CONFIG2, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'other field' => 1 })
     d.run
 
     assert_equal 3, @posted.size
@@ -122,15 +122,15 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 50, v1st[:data][:number]
     assert_equal 'count', v1st[:data][:mode]
     assert_nil v1st[:auth]
-    assert_equal 'service', v1st[:service]
-    assert_equal 'metrics', v1st[:section]
+    assert_equal 'service name', v1st[:service]
+    assert_equal 'metrics name', v1st[:section]
     assert_equal 'field1', v1st[:name]
 
     assert_equal 20, v2nd[:data][:number]
     assert_equal 'field2', v2nd[:name]
 
     assert_equal 1, v3rd[:data][:number]
-    assert_equal 'otherfield', v3rd[:name]
+    assert_equal 'other field', v3rd[:name]
   end
 
   # CONFIG3 = %[
@@ -144,7 +144,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   def test_emit_3
     d = create_driver(CONFIG3, 'test.metrics')
     # recent ruby's Hash saves elements order....
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'other field' => 1 })
     d.run
 
     assert_equal 3, @posted.size
@@ -155,8 +155,8 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 50, v1st[:data][:number]
     assert_equal 'modified', v1st[:data][:mode]
     assert_nil v1st[:auth]
-    assert_equal 'service', v1st[:service]
-    assert_equal 'metrics', v1st[:section]
+    assert_equal 'service name', v1st[:service]
+    assert_equal 'metrics name', v1st[:section]
     assert_equal 'field1', v1st[:name]
 
     assert_equal 20, v2nd[:data][:number]
@@ -177,7 +177,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     @auth = true # enable authentication of dummy server
 
     d = create_driver(CONFIG1, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'other field' => 1 })
     d.run # failed in background, and output warn log
 
     assert_equal 0, @posted.size
@@ -188,7 +188,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       username alice
       password wrong_password
     ], 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'other field' => 1 })
     d.run # failed in background, and output warn log
 
     assert_equal 0, @posted.size
@@ -199,7 +199,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       username alice
       password secret!
     ], 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'other field' => 1 })
     d.run # failed in background, and output warn log
 
     assert_equal 6, @prohibited
@@ -302,8 +302,8 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 1, @posted[0][:data][:number]
     assert_equal 'gauge', @posted[0][:data][:mode]
     assert_nil @posted[0][:auth]
-    assert_equal 'service', @posted[0][:service]
-    assert_equal 'metrics', @posted[0][:section]
+    assert_equal 'service name', @posted[0][:service]
+    assert_equal 'metrics name', @posted[0][:section]
     assert_equal 'hoge', @posted[0][:name]
 
     @auth = true

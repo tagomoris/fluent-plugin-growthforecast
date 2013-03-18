@@ -11,6 +11,9 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   config_param :service, :string, :default => nil
   config_param :section, :string, :default => nil
 
+  config_param :ssl, :bool, :default => false
+  config_param :verify_ssl, :bool, :default => false
+
   config_param :name_keys, :string, :default => nil
   config_param :name_key_pattern, :string, :default => nil
 
@@ -112,7 +115,11 @@ class Fluent::GrowthForecastOutput < Fluent::Output
         req.basic_auth(@username, @password)
       end
       req.set_form_data({'number' => value.to_i, 'mode' => @mode.to_s})
-      res = Net::HTTP.new(url.host, url.port).start {|http| http.request(req) }
+      http = Net::HTTP.new(url.host, url.port)
+      http.use_ssl = @ssl
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE unless @verify_ssl
+
+      res = http.start {|http| http.request(req) }
     rescue IOError, EOFError, SystemCallError
       # server didn't respond
       $log.warn "Net::HTTP.post_form raises exception: #{$!.class}, '#{$!.message}'"

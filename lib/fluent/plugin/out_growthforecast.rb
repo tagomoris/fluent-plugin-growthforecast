@@ -92,16 +92,15 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       tag = tag[@removed_length..-1]
     end
 
-    name_esc = URI.escape(name)
     case @tag_for
     when :ignore
-      @gfapi_url + @service + '/' + @section + '/' + name_esc
+      @gfapi_url + URI.escape(@service + '/' + @section + '/' + name)
     when :section
-      @gfapi_url + @service + '/' + tag + '/' + name_esc
+      @gfapi_url + URI.escape(@service + '/' + tag + '/' + name)
     when :service
-      @gfapi_url + tag + '/' + @section + '/' + name_esc
+      @gfapi_url + URI.escape(tag + '/' + @section + '/' + name)
     when :name_prefix
-      @gfapi_url + @service + '/' + @section + '/' + tag + '_' + name_esc
+      @gfapi_url + URI.escape(@service + '/' + @section + '/' + tag + '_' + name)
     end
   end
 

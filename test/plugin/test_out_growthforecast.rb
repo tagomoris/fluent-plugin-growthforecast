@@ -38,6 +38,14 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       remove_prefix test
   ]
   
+  CONFIG_SPACE = %[
+      gfapi_url http://127.0.0.1:5125/api/
+      service   service x
+      section   metrics y
+      name_keys field z
+      tag_for   ignore
+  ]
+
   def create_driver(conf=CONFIG1, tag='test.metrics')
     Fluent::Test::OutputTestDriver.new(Fluent::GrowthForecastOutput, tag).configure(conf)
   end
@@ -245,6 +253,29 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
 
     assert_equal 1, v3rd[:data][:number]
     assert_equal 'otherfield', v3rd[:name]
+  end
+
+  # CONFIG_SPACE = %[
+  #     gfapi_url http://127.0.0.1:5125/api/
+  #     service   service x
+  #     section   metrics y
+  #     name_keys field z
+  #     tag_for   ignore
+  # ]
+  def test_with_space_1
+    d = create_driver(CONFIG_SPACE, 'test.foo')
+    d.emit({ 'field z' => 3 })
+    d.run
+
+    assert_equal 1, @posted.size
+    v = @posted[0]
+
+    assert_equal 3, v[:data][:number]
+    assert_equal 'gauge', v[:data][:mode]
+    assert_nil v[:auth]
+    assert_equal 'service x', v[:service]
+    assert_equal 'metrics y', v[:section]
+    assert_equal 'field z', v[:name]
   end
 
   # setup / teardown for servers

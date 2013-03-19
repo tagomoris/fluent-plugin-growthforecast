@@ -261,7 +261,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
               WEBrick::HTTPServer.new({:BindAddress => '127.0.0.1', :Port => GF_TEST_LISTEN_PORT, :Logger => logger, :AccessLog => []})
             end
       begin
-        srv.mount_proc('/api/service/metrics') { |req,res| # /api/:service/:section/:name
+        srv.mount_proc('/api') { |req,res| # /api/:service/:section/:name
           unless req.request_method == 'POST'
             res.status = 405
             res.body = 'request method mismatch'
@@ -277,7 +277,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
             # ok, authorization not required
           end
 
-          req.path =~ /^\/api\/(service)\/(metrics)\/(.*)$/
+          req.path =~ /^\/api\/([^\/]*)\/([^\/]*)\/(.*)$/
           service = $1
           section = $2
           graph_name = $3
@@ -347,6 +347,17 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 'metrics', @posted[0][:section]
     assert_equal 'hoge', @posted[0][:name]
 
+    assert_equal '200', client.request_post(URI.escape('/api/service x/metrics/hoge'), 'number=1&mode=gauge').code
+
+    assert_equal 2, @posted.size
+
+    assert_equal 1, @posted[1][:data][:number]
+    assert_equal 'gauge', @posted[1][:data][:mode]
+    assert_nil @posted[1][:auth]
+    assert_equal 'service x', @posted[1][:service]
+    assert_equal 'metrics', @posted[1][:section]
+    assert_equal 'hoge', @posted[1][:name]
+
     @auth = true
 
     assert_equal '403', client.request_post('/api/service/metrics/pos', 'number=30&mode=gauge').code
@@ -363,11 +374,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
 
     assert_equal '403', client.request(req_with_auth.call(500, 'count', 'alice', 'wrong password!')).code
 
-    assert_equal 1, @posted.size
+    assert_equal 2, @posted.size
 
     assert_equal '200', client.request(req_with_auth.call(500, 'count', 'alice', 'secret!')).code
 
-    assert_equal 2, @posted.size
+    assert_equal 3, @posted.size
 
   end
 

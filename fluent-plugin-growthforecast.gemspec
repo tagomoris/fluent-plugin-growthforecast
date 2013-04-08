@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |gem|
   gem.name          = "fluent-plugin-growthforecast"
-  gem.version       = "0.1.5"
+  gem.version       = "0.1.6"
   gem.authors       = ["TAGOMORI Satoshi"]
   gem.email         = ["tagomoris@gmail.com"]
   gem.summary       = %q{Fluentd output plugin to post numbers to GrowthForecast (by kazeburo)}
@@ -14,9 +14,7 @@ Gem::Specification.new do |gem|
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ["lib"]
 
-  gem.add_development_dependency "bundler"
-  gem.add_development_dependency "fluentd"
-  gem.add_development_dependency "fluent-mixin-config-placeholders"
+  gem.add_development_dependency "rake"
   gem.add_runtime_dependency "fluentd"
   gem.add_runtime_dependency "fluent-mixin-config-placeholders"
 end

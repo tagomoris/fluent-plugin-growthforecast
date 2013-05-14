@@ -128,6 +128,9 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     if @auth and @auth == :basic
       req.basic_auth(@username, @password)
     end
+    if @keepalive
+      req['Connection'] = 'Keep-Alive'
+    end
     req.set_form_data({'number' => value.to_i, 'mode' => @mode.to_s})
     req
   end

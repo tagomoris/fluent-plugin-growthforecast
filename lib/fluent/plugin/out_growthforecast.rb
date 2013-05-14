@@ -21,7 +21,9 @@ class Fluent::GrowthForecastOutput < Fluent::Output
 
   config_param :remove_prefix, :string, :default => nil
   config_param :tag_for, :string, :default => 'name_prefix' # or 'ignore' or 'section' or 'service'
-  
+
+  config_param :keepalive, :bool, :default => true
+
   config_param :authentication, :string, :default => nil # nil or 'none' or 'basic'
   config_param :username, :string, :default => ''
   config_param :password, :string, :default => ''
@@ -104,23 +106,39 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     end
   end
 
+  def connect_to(tag, name)
+    url = URI.parse(format_url(tag,name))
+    return url.host, url.port
+  end
+
+  def http_connection(host, port)
+    http = Net::HTTP.new(host, port)
+    if @ssl
+      http.use_ssl = true
+      unless @verify_ssl
+        http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      end
+    end
+    http
+  end
+
+  def post_request(tag, name, value)
+    url = URI.parse(format_url(tag,name))
+    req = Net::HTTP::Post.new(url.path)
+    if @auth and @auth == :basic
+      req.basic_auth(@username, @password)
+    end
+    req.set_form_data({'number' => value.to_i, 'mode' => @mode.to_s})
+    req
+  end
+
   def post(tag, name, value)
     url = format_url(tag,name)
     res = nil
     begin
-      url = URI.parse(url)
-      req = Net::HTTP::Post.new(url.path)
-      if @auth and @auth == :basic
-        req.basic_auth(@username, @password)
-      end
-      req.set_form_data({'number' => value.to_i, 'mode' => @mode.to_s})
-      http = Net::HTTP.new(url.host, url.port)
-      if @ssl
-        http.use_ssl = true
-        unless @verify_ssl
-          http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-        end
-      end
+      host,port = connect_to(tag, name)
+      req = post_request(tag, name, value)
+      http = http_connection(host, port)
       res = http.start {|http| http.request(req) }
     rescue IOError, EOFError, SystemCallError
       # server didn't respond
@@ -131,12 +149,35 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     end
   end
 
+  def post_keepalive(events) # [{:tag=>'',:name=>'',:value=>X}]
+    return if events.size < 1
+
+    # gf host/port is same for all events (host is from configuration)
+    host,port = connect_to(events.first[:tag], events.first[:name])
+
+    requests = events.map{|e| post_request(e[:tag], e[:name], e[:value])}
+    begin
+      http = http_connection(host, port)
+      http.start do |http|
+        requests.each do |req|
+          res = http.request(req)
+          unless res and res.is_a?(Net::HTTPSuccess)
+            $log.warn "failed to post to growthforecast: #{host}:#{port}#{req.path}, post_data: #{req.body} code: #{res && res.code}"
+          end
+        end
+      end
+    rescue IOError, EOFError, SystemCallError
+      $log.warn "Net::HTTP.post_form raises exception: #{$!.class}, '#{$!.message}'"
+    end
+  end
+
   def emit(tag, es, chain)
+    events = []
     if @name_keys
       es.each {|time,record|
         @name_keys.each {|name|
           if record[name]
-            post(tag, name, record[name])
+            events.push({:tag => tag, :name => name, :value => record[name]})
           end
         }
       }
@@ -144,11 +185,19 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       es.each {|time,record|
         record.keys.each {|key|
           if @name_key_pattern.match(key) and record[key]
-            post(tag, key, record[key])
+            events.push({:tag => tag, :name => key, :value => record[key]})
           end
         }
       }
     end
+    if @keepalive
+      post_keepalive(events)
+    else
+      events.each do |event|
+        post(event[:tag], event[:name], event[:value])
+      end
+    end
+
     chain.next
   end
 end

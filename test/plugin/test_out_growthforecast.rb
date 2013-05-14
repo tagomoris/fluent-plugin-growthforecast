@@ -37,13 +37,22 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       tag_for   service
       remove_prefix test
   ]
-  
+
   CONFIG_SPACE = %[
       gfapi_url http://127.0.0.1:5125/api/
       service   service x
       section   metrics y
       name_keys field z
       tag_for   ignore
+  ]
+
+  CONFIG_NON_KEEPALIVE = %[
+      gfapi_url http://127.0.0.1:5125/api/
+      service   service
+      section   metrics
+      name_keys field1,field2,otherfield
+      tag_for   name_prefix
+      keepalive false
   ]
 
   def create_driver(conf=CONFIG1, tag='test.metrics')
@@ -278,6 +287,38 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 'field z', v[:name]
   end
 
+  # CONFIG_NON_KEEPALIVE = %[
+  #     gfapi_url http://127.0.0.1:5125/api/
+  #     service   service
+  #     section   metrics
+  #     name_keys field1,field2,otherfield
+  #     tag_for   name_prefix
+  #     keepalive false
+  # ]
+  def test_non_keepalive
+    d = create_driver(CONFIG_NON_KEEPALIVE, 'test.metrics')
+    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    d.run
+
+    assert_equal 3, @posted.size
+    v1st = @posted[0]
+    v2nd = @posted[1]
+    v3rd = @posted[2]
+
+    assert_equal 50, v1st[:data][:number]
+    assert_equal 'gauge', v1st[:data][:mode]
+    assert_nil v1st[:auth]
+    assert_equal 'service', v1st[:service]
+    assert_equal 'metrics', v1st[:section]
+    assert_equal 'test.metrics_field1', v1st[:name]
+
+    assert_equal 20, v2nd[:data][:number]
+    assert_equal 'test.metrics_field2', v2nd[:name]
+
+    assert_equal 1, v3rd[:data][:number]
+    assert_equal 'test.metrics_otherfield', v3rd[:name]
+  end
+
   # setup / teardown for servers
   def setup
     Fluent::Test.setup
@@ -351,11 +392,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
         end
       end
       cv.signal
-    } 
+    }
     mutex = Mutex.new
     mutex.synchronize {
       cv.wait(mutex)
-    } 
+    }
   end
 
   def test_dummy_server

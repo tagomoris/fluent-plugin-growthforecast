@@ -71,6 +71,17 @@ If your GrowthForecast protected with basic authentication, specify `authenticat
       password secret!
     </match>
 
+Version v0.2.0 or later, this plugin uses HTTP connection keep-alive for a batch emitted events. To disable this, specify `keepalive` option:
+
+    <match metrics.**>
+      type growthforecast
+      gfapi_url http://growthforecast.protected.anywhere.example.com/api/
+      service   yourservice
+      tag_for   section
+      name_keys fieldname
+	  keepalive no
+    </match>
+
 ## TODO
 
 * patches welcome!

@@ -17,4 +17,5 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "rake"
   gem.add_runtime_dependency "fluentd"
   gem.add_runtime_dependency "fluent-mixin-config-placeholders"
+  gem.add_runtime_dependency "resolve-hostname"
 end

@@ -130,6 +130,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     if @auth and @auth == :basic
       req.basic_auth(@username, @password)
     end
+    req['Host'] = url.host
     if @keepalive
       req['Connection'] = 'Keep-Alive'
     end

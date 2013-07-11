@@ -5,6 +5,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     super
     require 'net/http'
     require 'uri'
+    require 'resolve/hostname'
   end
 
   config_param :gfapi_url, :string # growth.forecast.local/api/
@@ -78,6 +79,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
             else
               :none
             end
+    @resolver = Resolve::Hostname.new(:system_resolver => true)
   end
 
   def start
@@ -112,7 +114,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   end
 
   def http_connection(host, port)
-    http = Net::HTTP.new(host, port)
+    http = Net::HTTP.new(@resolver.getaddress(host), port)
     if @ssl
       http.use_ssl = true
       unless @verify_ssl
@@ -128,6 +130,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     if @auth and @auth == :basic
       req.basic_auth(@username, @password)
     end
+    req['Host'] = url.host
     if @keepalive
       req['Connection'] = 'Keep-Alive'
     end

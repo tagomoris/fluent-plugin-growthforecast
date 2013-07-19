@@ -11,6 +11,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   config_param :gfapi_url, :string # growth.forecast.local/api/
   config_param :service, :string, :default => nil
   config_param :section, :string, :default => nil
+  config_param :graphs, :string, :default => nil
 
   config_param :ssl, :bool, :default => false
   config_param :verify_ssl, :bool, :default => false
@@ -47,6 +48,13 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     end
     if @name_key_pattern
       @name_key_pattern = Regexp.new(@name_key_pattern)
+    end
+
+    if @graphs
+      @graphs = @graphs.split(',')
+    end
+    if @name_keys and @graphs and @name_keys.size != @graphs.size
+      raise Fluent::ConfigError, "sizes of name_keys and graphs do not match"
     end
 
     @mode = case @mode
@@ -181,9 +189,10 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     events = []
     if @name_keys
       es.each {|time,record|
-        @name_keys.each {|name|
-          if record[name]
-            events.push({:tag => tag, :name => name, :value => record[name]})
+        @name_keys.each_with_index {|name, i|
+          if value = record[name]
+            name = @graphs[i] if @graphs
+            events.push({:tag => tag, :name => name, :value => value})
           end
         }
       }

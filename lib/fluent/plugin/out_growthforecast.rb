@@ -191,8 +191,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       es.each {|time,record|
         @name_keys.each_with_index {|name, i|
           if value = record[name]
-            name = @graphs[i] if @graphs
-            events.push({:tag => tag, :name => name, :value => value})
+            events.push({:tag => tag, :name => (@graphs ? @graphs[i] : name), :value => value})
           end
         }
       }

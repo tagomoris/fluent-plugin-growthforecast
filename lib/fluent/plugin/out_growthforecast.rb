@@ -11,6 +11,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   config_param :gfapi_url, :string # growth.forecast.local/api/
   config_param :service, :string, :default => nil
   config_param :section, :string, :default => nil
+  config_param :graphs, :string, :default => nil
 
   config_param :ssl, :bool, :default => false
   config_param :verify_ssl, :bool, :default => false
@@ -42,11 +43,22 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     if not @name_keys.nil? and not @name_key_pattern.nil?
       raise Fluent::ConfigError, "cannot specify both of name_keys and name_key_pattern"
     end
+    if not @graphs.nil? and @name_keys.nil?
+      raise Fluent::ConfigError, "graphs must be specified with name_keys"
+    end
+
     if @name_keys
       @name_keys = @name_keys.split(',')
     end
     if @name_key_pattern
       @name_key_pattern = Regexp.new(@name_key_pattern)
+    end
+
+    if @graphs
+      @graphs = @graphs.split(',')
+    end
+    if @name_keys and @graphs and @name_keys.size != @graphs.size
+      raise Fluent::ConfigError, "sizes of name_keys and graphs do not match"
     end
 
     @mode = case @mode
@@ -181,9 +193,9 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     events = []
     if @name_keys
       es.each {|time,record|
-        @name_keys.each {|name|
-          if record[name]
-            events.push({:tag => tag, :name => name, :value => record[name]})
+        @name_keys.each_with_index {|name, i|
+          if value = record[name]
+            events.push({:tag => tag, :name => (@graphs ? @graphs[i] : name), :value => value})
           end
         }
       }

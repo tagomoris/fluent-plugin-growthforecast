@@ -55,6 +55,33 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       keepalive false
   ]
 
+  CONFIG_BAD_GRAPHS = %[
+      gfapi_url http://127.0.0.1:5125/api/
+      service   service
+      section   metrics
+      name_keys field1,field2,otherfield
+      graphs    graph1,graph2
+      tag_for   name_prefix
+  ]
+
+  CONFIG_GRAPHS_WITHOUT_NAME_KEYS = %[
+      gfapi_url http://127.0.0.1:5125/api/
+      service   service
+      section   metrics
+      name_key_pattern ^(field|key)\\d+$
+      graphs    graph1,graph2
+      tag_for   name_prefix
+  ]
+
+  CONFIG_GRAPHS = %[
+      gfapi_url http://127.0.0.1:5125/api/
+      service   service
+      section   metrics
+      name_keys field1,field2,otherfield
+      graphs    graph1,graph2,othergraph
+      tag_for   name_prefix
+  ]
+
   def create_driver(conf=CONFIG1, tag='test.metrics')
     Fluent::Test::OutputTestDriver.new(Fluent::GrowthForecastOutput, tag).configure(conf)
   end
@@ -93,6 +120,9 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal :modified, d.instance.mode
 
     assert_equal 'http://127.0.0.1:5125/api/service/data1/field1', d.instance.format_url('test.data1', 'field1')
+
+    assert_raise(Fluent::ConfigError) { d = create_driver(CONFIG_BAD_GRAPHS) }
+    assert_raise(Fluent::ConfigError) { d = create_driver(CONFIG_GRAPHS_WITHOUT_NAME_KEYS) }
   end
 
   # CONFIG1 = %[
@@ -317,6 +347,38 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
 
     assert_equal 1, v3rd[:data][:number]
     assert_equal 'test.metrics_otherfield', v3rd[:name]
+  end
+
+  # CONFIG_GRAPHS = %[
+  #     gfapi_url http://127.0.0.1:5125/api/
+  #     service   service
+  #     section   metrics
+  #     name_keys field1,field2,otherfield
+  #     graphs    graph1,graph2,othergraph
+  #     tag_for   name_prefix
+  # ]
+  def test_graphs
+    d = create_driver(CONFIG_GRAPHS, 'test.metrics')
+    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    d.run
+
+    assert_equal 3, @posted.size
+    v1st = @posted[0]
+    v2nd = @posted[1]
+    v3rd = @posted[2]
+
+    assert_equal 50, v1st[:data][:number]
+    assert_equal 'gauge', v1st[:data][:mode]
+    assert_nil v1st[:auth]
+    assert_equal 'service', v1st[:service]
+    assert_equal 'metrics', v1st[:section]
+    assert_equal 'test.metrics_graph1', v1st[:name]
+
+    assert_equal 20, v2nd[:data][:number]
+    assert_equal 'test.metrics_graph2', v2nd[:name]
+
+    assert_equal 1, v3rd[:data][:number]
+    assert_equal 'test.metrics_othergraph', v3rd[:name]
   end
 
   # setup / teardown for servers

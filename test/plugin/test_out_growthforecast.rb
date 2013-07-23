@@ -64,6 +64,15 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       tag_for   name_prefix
   ]
 
+  CONFIG_GRAPHS_WITHOUT_NAME_KEYS = %[
+      gfapi_url http://127.0.0.1:5125/api/
+      service   service
+      section   metrics
+      name_key_pattern ^(field|key)\\d+$
+      graphs    graph1,graph2
+      tag_for   name_prefix
+  ]
+
   CONFIG_GRAPHS = %[
       gfapi_url http://127.0.0.1:5125/api/
       service   service
@@ -113,6 +122,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 'http://127.0.0.1:5125/api/service/data1/field1', d.instance.format_url('test.data1', 'field1')
 
     assert_raise(Fluent::ConfigError) { d = create_driver(CONFIG_BAD_GRAPHS) }
+    assert_raise(Fluent::ConfigError) { d = create_driver(CONFIG_GRAPHS_WITHOUT_NAME_KEYS) }
   end
 
   # CONFIG1 = %[

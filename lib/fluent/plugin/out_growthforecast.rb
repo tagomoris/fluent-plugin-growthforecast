@@ -43,6 +43,10 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     if not @name_keys.nil? and not @name_key_pattern.nil?
       raise Fluent::ConfigError, "cannot specify both of name_keys and name_key_pattern"
     end
+    if not @graphs.nil? and @name_keys.nil?
+      raise Fluent::ConfigError, "graphs must be specified with name_keys"
+    end
+
     if @name_keys
       @name_keys = @name_keys.split(',')
     end

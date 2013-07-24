@@ -88,6 +88,19 @@ Version v0.2.0 or later, this plugin uses HTTP connection keep-alive for a batch
 
     The URL of a GrowthForecast API endpoint like `http://growth.forecast.local/api/`.
     
+* tag\_for
+
+    Either of `name_prefix`, `section`, `service`, or `ignore`. Default is `name_prefix`. 
+
+    * `name_prefix` uses the tag name as a graph\_name prefix. 
+    * `section` uses the tag name as a section\_name.
+    * `service` uses the tag name as a service\_name.
+    * `ignore` uses the tag name for nothing.
+    
+* remove\_prefix
+
+    The prefix string which will be removed from the tag. This option would be useful using with the `tag_for` option.
+
 * service
 
     The service\_name of graphs to create.
@@ -96,21 +109,13 @@ Version v0.2.0 or later, this plugin uses HTTP connection keep-alive for a batch
 
     The section\_name of graphs to create.
 
-* ssl
-
-    Use SSL (https) or not. Default is false. 
-    
-* verify\_ssl
-
-    Do SSL verification or not. Default is false (ignore the SSL verification).
-
 * name\_keys
 
     Specify field names of the input record. Separate by , (comma).
     The values of these fields are posted as numbers, and names of thease fields are used as parts of grame\_names. 
     Either of `name_keys` or `name_key_pattern` is required. 
 
-* name_key_pattern
+* name\_key\_pattern
 
     Specify the field names of the input record by a regular expression.
     The values of these fields are posted as numbers, and names of thease fields are used as parts of grame\_names. 
@@ -125,28 +130,23 @@ Version v0.2.0 or later, this plugin uses HTTP connection keep-alive for a batch
 
     The graph mode (either of `gauge`, `count`, or `modified`). Just same as `mode` of GrowthForecast POST parameter. Default is `gauge`. 
     
-* tag\_for
-
-    Either of `name_prefix`, `section`, `service`, or `ignore`. Default is `name_prefix`. 
-
-    * `name_prefix` uses the tag name as a graph\_name prefix. 
-    * `section` uses the tag name as a section\_name.
-    * `service` uses the tag name as a service\_name.
-    * `ignore` uses the tag name for nothing.
-    
-* remove\_prefix
-
-    The prefix string which will be removed from the tag. This option would be useful using with the `tag_for` option.
-
 * keepalive
 
     Use a keepalive HTTP connection. Default is false.
 
     NOTE: To effectively use this, you may need to give a parameter `max_keepalive_reqs` (default: 1) to Starlet in `growthforecast.pl`. 
     
+* ssl
+
+    Use SSL (https) or not. Default is false. 
+    
+* verify\_ssl
+
+    Do SSL verification or not. Default is false (ignore the SSL verification).
+
 * authentication
 
-    If your GrowthForecast protected with basic authentication, specify `basic`. Default is 'none' (no authentication).
+    Specify `basic` if your GrowthForecast protected with basic authentication. Default is 'none' (no authentication).
     
 * username
 

@@ -27,6 +27,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   config_param :background_post, :bool, :default => false
 
   config_param :timeout, :integer, :default => nil # default 60secs
+  config_param :retry, :bool, :default => true
   config_param :keepalive, :bool, :default => true
 
   config_param :authentication, :string, :default => nil # nil or 'none' or 'basic'
@@ -125,7 +126,11 @@ class Fluent::GrowthForecastOutput < Fluent::Output
         es,@queue = @queue,[]
         es
       }
-      post_events(events)
+      begin
+        post_events(events)
+      rescue => e
+        $log.warn "HTTP POST Error occures to growthforecast server", :error_class => e.class, :error => e.message
+      end
       sleep(0.2)
     end
   end
@@ -255,7 +260,12 @@ class Fluent::GrowthForecastOutput < Fluent::Output
         @queue += events
       end
     else
-      post_events(events)
+      begin
+        post_events(events)
+      rescue => e
+        $log.warn "HTTP POST Error occures to growthforecast server", :error_class => e.class, :error => e.message
+        raise if @retry
+      end
     end
 
     chain.next

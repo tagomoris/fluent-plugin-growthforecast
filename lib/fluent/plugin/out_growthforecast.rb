@@ -24,6 +24,9 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   config_param :remove_prefix, :string, :default => nil
   config_param :tag_for, :string, :default => 'name_prefix' # or 'ignore' or 'section' or 'service'
 
+  config_param :background_post, :bool, :default => false
+
+  config_param :timeout, :integer, :default => nil # default 60secs
   config_param :keepalive, :bool, :default => true
 
   config_param :authentication, :string, :default => nil # nil or 'none' or 'basic'
@@ -96,10 +99,35 @@ class Fluent::GrowthForecastOutput < Fluent::Output
 
   def start
     super
+
+    @running = true
+    @thread = nil
+    @queue = nil
+    @mutex = nil
+    if @background_post
+      @mutex = Mutex.new
+      @queue = []
+      @thread = Thread.new(&method(:poster))
+    end
   end
 
   def shutdown
+    @running = false
+    @thread.join if @thread
     super
+  end
+
+  def poster
+    while @running
+      next if @queue.size < 1
+
+      events = @mutex.synchronize {
+        es,@queue = @queue,[]
+        es
+      }
+      post_events(events)
+      sleep(0.2)
+    end
   end
 
   def format_url(tag, name)
@@ -127,6 +155,10 @@ class Fluent::GrowthForecastOutput < Fluent::Output
 
   def http_connection(host, port)
     http = Net::HTTP.new(@resolver.getaddress(host), port)
+    if @timeout
+      http.open_timeout = @timeout
+      http.read_timeout = @timeout
+    end
     if @ssl
       http.use_ssl = true
       unless @verify_ssl
@@ -189,6 +221,16 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     end
   end
 
+  def post_events(events)
+    if @keepalive
+      post_keepalive(events)
+    else
+      events.each do |event|
+        post(event[:tag], event[:name], event[:value])
+      end
+    end
+  end
+
   def emit(tag, es, chain)
     events = []
     if @name_keys
@@ -208,12 +250,12 @@ class Fluent::GrowthForecastOutput < Fluent::Output
         }
       }
     end
-    if @keepalive
-      post_keepalive(events)
-    else
-      events.each do |event|
-        post(event[:tag], event[:name], event[:value])
+    if @thread
+      @mutex.synchronize do
+        @queue += events
       end
+    else
+      post_events(events)
     end
 
     chain.next

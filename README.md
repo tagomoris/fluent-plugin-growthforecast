@@ -136,6 +136,18 @@ Version v0.2.0 or later, this plugin uses HTTP connection keep-alive for a batch
 
     NOTE: To effectively use this, you may need to give a parameter `max_keepalive_reqs` (default: 1) to Starlet in `growthforecast.pl`. 
     
+* background_post
+
+    Post to GrowthForecast in background thread, without retries for failures (Default: false)
+
+* timeout
+
+    Read/Write timeout seconds (Default: 60)
+
+* retry
+
+    Do retry for HTTP request failures, or not. This feature will be set as false for `background_post yes` automatically. (Default: true)
+
 * ssl
 
     Use SSL (https) or not. Default is false. 

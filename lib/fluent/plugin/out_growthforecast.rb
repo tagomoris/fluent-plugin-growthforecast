@@ -120,18 +120,20 @@ class Fluent::GrowthForecastOutput < Fluent::Output
 
   def poster
     while @running
-      next if @queue.size < 1
+      if @queue.size < 1
+        sleep(0.2)
+        next
+      end
 
       events = @mutex.synchronize {
         es,@queue = @queue,[]
         es
       }
       begin
-        post_events(events)
+        post_events(events) if events.size > 0
       rescue => e
         $log.warn "HTTP POST Error occures to growthforecast server", :error_class => e.class, :error => e.message
       end
-      sleep(0.2)
     end
   end
 

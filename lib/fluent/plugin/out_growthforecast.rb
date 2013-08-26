@@ -132,7 +132,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       begin
         post_events(events) if events.size > 0
       rescue => e
-        $log.warn "HTTP POST Error occures to growthforecast server", :error_class => e.class, :error => e.message
+        $log.warn "HTTP POST in background Error occures to growthforecast server", :error_class => e.class, :error => e.message
       end
     end
   end
@@ -199,7 +199,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       res = http.start {|http| http.request(req) }
     rescue IOError, EOFError, SystemCallError
       # server didn't respond
-      $log.warn "Net::HTTP.post_form raises exception: #{$!.class}, '#{$!.message}'"
+      $log.warn "net/http POST raises exception: #{$!.class}, '#{$!.message}'"
     end
     unless res and res.is_a?(Net::HTTPSuccess)
       $log.warn "failed to post to growthforecast: #{url}, number: #{value}, code: #{res && res.code}"
@@ -224,7 +224,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
         end
       end
     rescue IOError, EOFError, SystemCallError
-      $log.warn "Net::HTTP.post_form raises exception: #{$!.class}, '#{$!.message}'"
+      $log.warn "net/http keepalive POST raises exception: #{$!.class}, '#{$!.message}'"
     end
   end
 

@@ -8,6 +8,7 @@ Gem::Specification.new do |gem|
   gem.summary       = %q{Fluentd output plugin to post numbers to GrowthForecast (by kazeburo)}
   gem.description   = %q{For GrowthForecast, see http://kazeburo.github.com/GrowthForecast/}
   gem.homepage      = "https://github.com/tagomoris/fluent-plugin-growthforecast"
+  gem.license       = "APLv2"
 
   gem.files         = `git ls-files`.split($\)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }

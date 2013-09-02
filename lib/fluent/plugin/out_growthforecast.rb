@@ -76,14 +76,15 @@ class Fluent::GrowthForecastOutput < Fluent::Output
                when 'ignore' then :ignore
                when 'section' then :section
                when 'service' then :service
+               when 'service_and_name' then :service_and_name
                else
                  :name_prefix
                end
     if @tag_for != :section and @section.nil?
       raise Fluent::ConfigError, "section parameter is needed when tag_for is not 'section'"
     end
-    if @tag_for != :service and @service.nil?
-      raise Fluent::ConfigError, "service parameter is needed when tag_for is not 'service'"
+    if @tag_for != :service and @tag_for != :service_and_name and @service.nil?
+      raise Fluent::ConfigError, "service parameter is needed when tag_for is not 'service' or 'service_and_name'"
     end
 
     if @remove_prefix
@@ -151,6 +152,8 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       @gfapi_url + URI.escape(@service + '/' + tag + '/' + name)
     when :service
       @gfapi_url + URI.escape(tag + '/' + @section + '/' + name)
+    when :service_and_name
+      @gfapi_url + URI.escape(tag + '/' + @section + '/' + tag + '_' + name)
     when :name_prefix
       @gfapi_url + URI.escape(@service + '/' + @section + '/' + tag + '_' + name)
     end

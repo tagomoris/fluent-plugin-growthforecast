@@ -58,6 +58,22 @@ If you want to use tags for `section` or `service`  in GrowthForecast, use `tag_
 
 This configuration matches only with metrics.field1, metrics.key20, .... and doesn't match with metrics.field or metrics.foo.
 
+If you want to customise for more flexible graph path, use `graph_path` option with ${tag} and ${name} placeholders.
+
+    <match test.service1>
+      type growthforecast
+      gfapi_url http://growthforecast.local/api/
+      graph_path ${tag}/metrics1/${tag}_${name}
+      name_keys field1,field2,field3diff
+      remove_prefix test
+    </match>
+
+With this configuration, out_growthforecast posts urls below.
+
+    http://growthforecast.local/api/service1/metrics1/service1_field1
+    http://growthforecast.local/api/service1/metrics1/service1_field2
+    http://growthforecast.local/api/service1/metrics1/service1_field3diff
+
 If your GrowthForecast protected with basic authentication, specify `authentication` option:
 
     <match metrics.**>
@@ -82,12 +98,17 @@ Version v0.2.0 or later, this plugin uses HTTP connection keep-alive for a batch
 	  keepalive no
     </match>
 
+
 ## Parameters
 
 * gfapi\_url (required)
 
     The URL of a GrowthForecast API endpoint like `http://growth.forecast.local/api/`.
     
+* graph\_path
+
+    The graph path for GrowthForecast API endpoint with the order of service, section, graph_name.
+
 * tag\_for
 
     Either of `name_prefix`, `section`, `service`, or `ignore`. Default is `name_prefix`. 

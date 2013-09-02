@@ -90,11 +90,12 @@ Version v0.2.0 or later, this plugin uses HTTP connection keep-alive for a batch
     
 * tag\_for
 
-    Either of `name_prefix`, `section`, `service`, or `ignore`. Default is `name_prefix`. 
+    Either of `name_prefix`, `section`, `service`, `service_and_name`, or `ignore`. Default is `name_prefix`. 
 
     * `name_prefix` uses the tag name as a graph\_name prefix. 
     * `section` uses the tag name as a section\_name.
     * `service` uses the tag name as a service\_name.
+    * `service_and_name` uses the tag name as a service\_name and graph\_name prefix.
     * `ignore` uses the tag name for nothing.
     
 * remove\_prefix

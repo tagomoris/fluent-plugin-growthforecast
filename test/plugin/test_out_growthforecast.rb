@@ -38,6 +38,14 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       remove_prefix test
   ]
 
+  CONFIG5 = %[
+      gfapi_url http://127.0.0.1:5125/api/
+      section   metrics
+      name_keys field1,field2,otherfield
+      tag_for   service_and_name
+      remove_prefix test
+  ]
+
   CONFIG_SPACE = %[
       gfapi_url http://127.0.0.1:5125/api/
       service   service x
@@ -322,6 +330,39 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
 
     assert_equal 1, v3rd[:data][:number]
     assert_equal 'otherfield', v3rd[:name]
+  end
+
+  # CONFIG5 = %[
+  #     gfapi_url http://127.0.0.1:5125/api/
+  #     section   metrics
+  #     name_keys field1,field2,otherfield
+  #     tag_for   service_and_name
+  #     remove_prefix test
+  # ]
+
+  def test_emit_6
+    d = create_driver(CONFIG5, 'test.service')
+    # recent ruby's Hash saves elements order....
+    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    d.run
+
+    assert_equal 3, @posted.size
+    v1st = @posted[0]
+    v2nd = @posted[1]
+    v3rd = @posted[2]
+
+    assert_equal 50, v1st[:data][:number]
+    assert_equal 'gauge', v1st[:data][:mode]
+    assert_nil v1st[:auth]
+    assert_equal 'service', v1st[:service]
+    assert_equal 'metrics', v1st[:section]
+    assert_equal 'service_field1', v1st[:name]
+
+    assert_equal 20, v2nd[:data][:number]
+    assert_equal 'service_field2', v2nd[:name]
+
+    assert_equal 1, v3rd[:data][:number]
+    assert_equal 'service_otherfield', v3rd[:name]
   end
 
   # CONFIG_SPACE = %[

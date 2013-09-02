@@ -29,6 +29,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   config_param :timeout, :integer, :default => nil # default 60secs
   config_param :retry, :bool, :default => true
   config_param :keepalive, :bool, :default => true
+  config_param :enable_float_number, :bool, :default => false
 
   config_param :authentication, :string, :default => nil # nil or 'none' or 'basic'
   config_param :username, :string, :default => ''
@@ -185,7 +186,8 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     if @keepalive
       req['Connection'] = 'Keep-Alive'
     end
-    req.set_form_data({'number' => value.to_i, 'mode' => @mode.to_s})
+    value = @enable_float_number ? value.to_f : value.to_i
+    req.set_form_data({'number' => value, 'mode' => @mode.to_s})
     req
   end
 

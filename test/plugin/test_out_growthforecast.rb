@@ -103,6 +103,15 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       tag_for   name_prefix
   ]
 
+  CONFIG_ENABLE_FLOAT_NUMBER = %[
+      gfapi_url http://127.0.0.1:5125/api/
+      service   service
+      section   metrics
+      name_keys field1,field2,otherfield
+      tag_for   name_prefix
+      enable_float_number true
+  ]
+
   def create_driver(conf=CONFIG1, tag='test.metrics')
     Fluent::Test::OutputTestDriver.new(Fluent::GrowthForecastOutput, tag).configure(conf)
   end
@@ -472,12 +481,47 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 'test.metrics_othergraph', v3rd[:name]
   end
 
+  # CONFIG_NON_KEEPALIVE = %[
+  #     gfapi_url http://127.0.0.1:5125/api/
+  #     service   service
+  #     section   metrics
+  #     name_keys field1,field2,otherfield
+  #     tag_for   name_prefix
+  #     enable_float_number true
+  # ]
+  def test_enable_float_number
+    @enable_float_number = true # enable float number of dummy server
+
+    d = create_driver(CONFIG_ENABLE_FLOAT_NUMBER, 'test.metrics')
+    d.emit({ 'field1' => 50.5, 'field2' => -20.1, 'field3' => 10, 'otherfield' => 1 })
+    d.run
+
+    assert_equal 3, @posted.size
+    v1st = @posted[0]
+    v2nd = @posted[1]
+    v3rd = @posted[2]
+
+    assert_equal 50.5, v1st[:data][:number]
+    assert_equal 'gauge', v1st[:data][:mode]
+    assert_nil v1st[:auth]
+    assert_equal 'service', v1st[:service]
+    assert_equal 'metrics', v1st[:section]
+    assert_equal 'test.metrics_field1', v1st[:name]
+
+    assert_equal -20.1, v2nd[:data][:number]
+    assert_equal 'test.metrics_field2', v2nd[:name]
+
+    assert_equal 1, v3rd[:data][:number]
+    assert_equal 'test.metrics_otherfield', v3rd[:name]
+  end
+
   # setup / teardown for servers
   def setup
     Fluent::Test.setup
     @posted = []
     @prohibited = 0
     @auth = false
+    @enable_float_number = false
     @dummy_server_thread = Thread.new do
       srv = if ENV['VERBOSE']
               WEBrick::HTTPServer.new({:BindAddress => '127.0.0.1', :Port => GF_TEST_LISTEN_PORT})
@@ -508,12 +552,13 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
           graph_name = $3
           post_param = Hash[*(req.body.split('&').map{|kv|kv.split('=')}.flatten)]
 
+          number = @enable_float_number ? post_param['number'].to_f : post_param['number'].to_i
           @posted.push({
               :service => service,
               :section => section,
               :name => graph_name,
               :auth => nil,
-              :data => { :number => post_param['number'].to_i, :mode => post_param['mode'] },
+              :data => { :number => number, :mode => post_param['mode'] },
             })
 
           res.status = 200

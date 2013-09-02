@@ -168,6 +168,12 @@ Version v0.2.0 or later, this plugin uses HTTP connection keep-alive for a batch
 
     The password for authentication.
 
+* enable\_float\_number
+
+    Post a floating number rather than an interger number. Default is false. 
+    
+    NOTE: You need to run your GrowthForecast with `--enable-float-number` option, supported by GrowthForecast v0.70 or later.
+        
 ## TODO
 
 * patches welcome!

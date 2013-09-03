@@ -114,7 +114,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
 
   CONFIG_GFAPI_PATH = %[
       gfapi_url  http://127.0.0.1:5125/api/
-      graph_path ${tag}/metrics/${tag}_${name}
+      graph_path ${tag}/metrics/${tag}_${key_name}
       name_keys  field1,field2,otherfield
       remove_prefix test
   ]

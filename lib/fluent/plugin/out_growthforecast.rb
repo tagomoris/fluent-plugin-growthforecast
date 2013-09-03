@@ -36,27 +36,12 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   config_param :username, :string, :default => ''
   config_param :password, :string, :default => ''
 
-  def default_graph_path_mapping
-    {
-      :ignore => '${service}/${section}/${name}',
-      :service => '${tag}/${section}/${name}',
-      :section => '${service}/${tag}/${name}',
-      :name_prefix => '${service}/${section}/${tag}_${name}',
-    }
-  end
-
-  def get_placeholder(tag, name)
-    if @remove_prefix and
-        ( (tag.start_with?(@removed_prefix_string) and tag.length > @removed_length) or tag == @remove_prefix)
-      tag = tag[@removed_length..-1]
-    end
-    {
-      '${service}' => @service,
-      '${section}' => @section,
-      '${tag}' => tag,
-      '${name}' => name,
-    }
-  end
+  DEFAULT_GRAPH_PATH = {
+    :ignore => '${service}/${section}/${key_name}',
+    :service => '${tag}/${section}/${key_name}',
+    :section => '${service}/${tag}/${key_name}',
+    :name_prefix => '${service}/${section}/${tag}_${key_name}',
+  }
 
   def configure(conf)
     super
@@ -65,7 +50,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       raise Fluent::ConfigError, "gfapi_url must end with /api/"
     end
     if not @graph_path.nil? and @graph_path !~ /^[^\/]+\/[^\/]+\/[^\/]+$/
-      raise Fluent::ConfigError, "graph_path must be like '${service}/${section}/${tag}_${name}'"
+      raise Fluent::ConfigError, "graph_path must be like '${service}/${section}/${tag}_${key_name}'"
     end
 
     if @name_keys.nil? and @name_key_pattern.nil?
@@ -106,14 +91,14 @@ class Fluent::GrowthForecastOutput < Fluent::Output
                else
                  :name_prefix
                end
-    if @graph_path.nil? and @tag_for != :section and @section.nil?
-      raise Fluent::ConfigError, "section parameter is needed when tag_for is not 'section'"
-    end
-    if @graph_path.nil? and @tag_for != :service and @service.nil?
-      raise Fluent::ConfigError, "service parameter is needed when tag_for is not 'service'"
-    end
     if @graph_path.nil?
-      @graph_path = default_graph_path_mapping[@tag_for]
+      if @tag_for != :section and @section.nil?
+        raise Fluent::ConfigError, "section parameter is needed when tag_for is not 'section'"
+      end
+      if @tag_for != :service and @service.nil?
+        raise Fluent::ConfigError, "service parameter is needed when tag_for is not 'service'"
+      end
+      @graph_path = DEFAULT_GRAPH_PATH[@tag_for]
     end
 
     if @remove_prefix
@@ -168,9 +153,16 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     end
   end
 
+  def placeholder_mapping(tag, name)
+    if @remove_prefix and
+        ( (tag.start_with?(@removed_prefix_string) and tag.length > @removed_length) or tag == @remove_prefix)
+      tag = tag[@removed_length..-1]
+    end
+    {'${service}' => @service, '${section}' => @section, '${tag}' => tag, '${key_name}' => name}
+  end
+
   def format_url(tag, name)
-    placeholder = get_placeholder(tag,name)
-    graph_path = @graph_path.gsub(/(\${[a-z]+})/, placeholder)
+    graph_path = @graph_path.gsub(/(\${[_a-z]+})/, placeholder_mapping(tag, name))
     return @gfapi_url + URI.escape(graph_path)
   end
 

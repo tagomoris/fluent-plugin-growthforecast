@@ -58,12 +58,12 @@ If you want to use tags for `section` or `service`  in GrowthForecast, use `tag_
 
 This configuration matches only with metrics.field1, metrics.key20, .... and doesn't match with metrics.field or metrics.foo.
 
-If you want to customise for more flexible graph path, use `graph_path` option with ${tag} and ${name} placeholders.
+If you want to customise for more flexible graph path, use `graph_path` option with `${tag}` and `${name}` placeholders.
 
     <match test.service1>
       type growthforecast
       gfapi_url http://growthforecast.local/api/
-      graph_path ${tag}/metrics1/${tag}_${name}
+      graph_path ${tag}/metrics1/${tag}_${key_name}
       name_keys field1,field2,field3diff
       remove_prefix test
     </match>

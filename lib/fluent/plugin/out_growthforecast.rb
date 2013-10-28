@@ -225,18 +225,32 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     host,port = connect_to(events.first[:tag], events.first[:name])
 
     requests = events.map{|e| post_request(e[:tag], e[:name], e[:value])}
-    begin
-      http = http_connection(host, port)
-      http.start do |http|
-        requests.each do |req|
-          res = http.request(req)
-          unless res and res.is_a?(Net::HTTPSuccess)
-            $log.warn "failed to post to growthforecast: #{host}:#{port}#{req.path}, post_data: #{req.body} code: #{res && res.code}"
-          end
+
+    http = nil
+    requests.each do |req|
+      begin
+        unless http
+          http = http_connection(host, port)
+          http.start
         end
+        res = http.request(req)
+        unless res and res.is_a?(Net::HTTPSuccess)
+          $log.warn "failed to post to growthforecast: #{host}:#{port}#{req.path}, post_data: #{req.body} code: #{res && res.code}"
+        end
+      rescue IOError, EOFError, Errno::ECONNRESET, Errno::ETIMEDOUT, SystemCallError
+        $log.warn "net/http keepalive POST raises exception: #{$!.class}, '#{$!.message}'"
+        begin
+          http.finish
+        rescue => e
+          # ignore all errors for connection with error
+        end
+        http = nil
       end
-    rescue IOError, EOFError, SystemCallError
-      $log.warn "net/http keepalive POST raises exception: #{$!.class}, '#{$!.message}'"
+    end
+    begin
+      http.finish
+    rescue => e
+      # ignore
     end
   end
 

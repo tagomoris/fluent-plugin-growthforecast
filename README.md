@@ -1,4 +1,4 @@
-# fluent-plugin-growthforecast
+# fluent-plugin-growthforecast, a plugin for [Fluentd](http://fluentd.org)
 
 ## GrowthForecastOutput
 

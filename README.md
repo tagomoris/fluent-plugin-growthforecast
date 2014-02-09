@@ -1,8 +1,8 @@
-# fluent-plugin-growthforecast
+# fluent-plugin-growthforecast 
 
 ## GrowthForecastOutput
 
-Plugin to output numbers(metrics) to 'GrowthForecast', metrics drawing tool over HTTP.
+[Fluentd](http://fluentd.org) plugin to output numbers(metrics) to 'GrowthForecast', metrics drawing tool over HTTP.
 
 About GrowthForecast, see:
 * Github: https://github.com/kazeburo/growthforecast

@@ -43,6 +43,11 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     :name_prefix => '${service}/${section}/${tag}_${key_name}',
   }
 
+  # Define `log` method for v0.10.42 or earlier
+  unless method_defined?(:log)
+    define_method("log") { $log }
+  end
+
   def configure(conf)
     super
 
@@ -148,7 +153,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       begin
         post_events(events) if events.size > 0
       rescue => e
-        $log.warn "HTTP POST in background Error occures to growthforecast server", :error_class => e.class, :error => e.message
+        log.warn "HTTP POST in background Error occures to growthforecast server", :error_class => e.class, :error => e.message
       end
     end
   end
@@ -211,10 +216,10 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       res = http.start {|http| http.request(req) }
     rescue IOError, EOFError, SystemCallError
       # server didn't respond
-      $log.warn "net/http POST raises exception: #{$!.class}, '#{$!.message}'"
+      log.warn "net/http POST raises exception: #{$!.class}, '#{$!.message}'"
     end
     unless res and res.is_a?(Net::HTTPSuccess)
-      $log.warn "failed to post to growthforecast: #{url}, number: #{value}, code: #{res && res.code}"
+      log.warn "failed to post to growthforecast: #{url}, number: #{value}, code: #{res && res.code}"
     end
   end
 
@@ -235,10 +240,10 @@ class Fluent::GrowthForecastOutput < Fluent::Output
         end
         res = http.request(req)
         unless res and res.is_a?(Net::HTTPSuccess)
-          $log.warn "failed to post to growthforecast: #{host}:#{port}#{req.path}, post_data: #{req.body} code: #{res && res.code}"
+          log.warn "failed to post to growthforecast: #{host}:#{port}#{req.path}, post_data: #{req.body} code: #{res && res.code}"
         end
       rescue IOError, EOFError, Errno::ECONNRESET, Errno::ETIMEDOUT, SystemCallError
-        $log.warn "net/http keepalive POST raises exception: #{$!.class}, '#{$!.message}'"
+        log.warn "net/http keepalive POST raises exception: #{$!.class}, '#{$!.message}'"
         begin
           http.finish
         rescue => e
@@ -291,7 +296,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       begin
         post_events(events)
       rescue => e
-        $log.warn "HTTP POST Error occures to growthforecast server", :error_class => e.class, :error => e.message
+        log.warn "HTTP POST Error occures to growthforecast server", :error_class => e.class, :error => e.message
         raise if @retry
       end
     end

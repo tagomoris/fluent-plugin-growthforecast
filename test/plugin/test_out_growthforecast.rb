@@ -46,6 +46,14 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       tag_for   ignore
   ]
 
+  CONFIG_NESTED_NAME = %[
+      gfapi_url http://127.0.0.1:5125/api/
+      service   service
+      section   metrics
+      name_keys field1.value1,field2.value21,field2.value22
+      tag_for   ignore
+  ]
+
   CONFIG_NON_KEEPALIVE = %[
       gfapi_url http://127.0.0.1:5125/api/
       service   service
@@ -128,7 +136,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 'http://127.0.0.1:5125/api/', d.instance.gfapi_url
     assert_equal 'service', d.instance.service
     assert_equal 'metrics', d.instance.section
-    assert_equal ['field1', 'field2', 'otherfield'], d.instance.name_keys
+    assert_equal [['field1'], ['field2'], ['otherfield']], d.instance.name_keys
     assert_nil d.instance.remove_prefix
     assert_equal :name_prefix, d.instance.tag_for
     assert_equal :gauge, d.instance.mode
@@ -139,7 +147,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 'http://127.0.0.1:5125/api/', d.instance.gfapi_url
     assert_equal 'service', d.instance.service
     assert_equal 'metrics', d.instance.section
-    assert_equal ['field1', 'field2', 'otherfield'], d.instance.name_keys
+    assert_equal [['field1'], ['field2'], ['otherfield']], d.instance.name_keys
     assert_nil d.instance.remove_prefix
     assert_equal :ignore, d.instance.tag_for
     assert_equal :count, d.instance.mode
@@ -160,6 +168,15 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
 
     assert_raise(Fluent::ConfigError) { d = create_driver(CONFIG_BAD_GRAPHS) }
     assert_raise(Fluent::ConfigError) { d = create_driver(CONFIG_GRAPHS_WITHOUT_NAME_KEYS) }
+
+    d = create_driver(CONFIG_NESTED_NAME)
+    assert_equal 'http://127.0.0.1:5125/api/', d.instance.gfapi_url
+    assert_equal 'service', d.instance.service
+    assert_equal 'metrics', d.instance.section
+    assert_equal [['field1', 'value1'], ['field2', 'value21'], ['field2', 'value22']], d.instance.name_keys
+    assert_nil d.instance.remove_prefix
+    assert_equal :ignore, d.instance.tag_for
+    assert_equal :gauge, d.instance.mode
   end
 
   # CONFIG1 = %[
@@ -352,6 +369,45 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 'service x', v[:service]
     assert_equal 'metrics y', v[:section]
     assert_equal 'field z', v[:name]
+  end
+
+  CONFIG_NESTED_NAME = %[
+      gfapi_url http://127.0.0.1:5125/api/
+      service   service
+      section   metrics
+      name_keys field1.value1,field2.value21,field2.value22
+      tag_for   ignore
+  ]
+  def test_with_nested_name
+    d = create_driver(CONFIG_NESTED_NAME, 'test.foo')
+    d.emit({ 'field1' => { 'value1' => 3 }, 'field2' => { 'value21' => 4, 'value22' => 5 }})
+    d.run
+
+    assert_equal 3, @posted.size
+    v1st = @posted[0]
+    v2nd = @posted[1]
+    v3rd = @posted[2]
+
+    assert_equal 3, v1st[:data][:number]
+    assert_equal 'gauge', v1st[:data][:mode]
+    assert_nil v1st[:auth]
+    assert_equal 'service', v1st[:service]
+    assert_equal 'metrics', v1st[:section]
+    assert_equal 'field1.value1', v1st[:name]
+
+    assert_equal 4, v2nd[:data][:number]
+    assert_equal 'gauge', v2nd[:data][:mode]
+    assert_nil v2nd[:auth]
+    assert_equal 'service', v2nd[:service]
+    assert_equal 'metrics', v2nd[:section]
+    assert_equal 'field2.value21', v2nd[:name]
+
+    assert_equal 5, v3rd[:data][:number]
+    assert_equal 'gauge', v3rd[:data][:mode]
+    assert_nil v3rd[:auth]
+    assert_equal 'service', v3rd[:service]
+    assert_equal 'metrics', v3rd[:section]
+    assert_equal 'field2.value22', v3rd[:name]
   end
 
   # CONFIG_NON_KEEPALIVE = %[

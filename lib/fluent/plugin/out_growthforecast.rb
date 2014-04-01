@@ -69,7 +69,9 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     end
 
     if @name_keys
-      @name_keys = @name_keys.split(',')
+      @name_keys = @name_keys.split(',').map do |name|
+        name.split('.')
+      end
     end
     if @name_key_pattern
       @name_key_pattern = Regexp.new(@name_key_pattern)
@@ -274,8 +276,13 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     if @name_keys
       es.each {|time,record|
         @name_keys.each_with_index {|name, i|
-          if value = record[name]
-            events.push({:tag => tag, :name => (@graphs ? @graphs[i] : name), :value => value})
+          value = record
+          name.each {|k|
+            break value = nil if not value.has_key?(k)
+            value = value[k]
+          }
+          if not value.nil?
+            events.push({:tag => tag, :name => (@graphs ? @graphs[i] : name.join(".")), :value => value})
           end
         }
       }

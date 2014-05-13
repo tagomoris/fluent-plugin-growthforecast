@@ -119,6 +119,14 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       remove_prefix test
   ]
 
+  CONFIG_HRFORECAST_DATETIME_FORMAT = %[
+      gfapi_url  http://127.0.0.1:5125/api/
+      service    service
+      section    metrics
+      name_keys  field
+      hrforecast_datetime_format %Y-%m-%d
+  ]
+
   def create_driver(conf=CONFIG1, tag='test.metrics')
     Fluent::Test::OutputTestDriver.new(Fluent::GrowthForecastOutput, tag).configure(conf)
   end
@@ -547,6 +555,26 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 'service_otherfield', v3rd[:name]
   end
 
+  # CONFIG_HRFORECAST_DATETIME_FORMAT = %[
+  #     gfapi_url  http://127.0.0.1:5125/api/
+  #     service    service
+  #     section    metrics
+  #     name_keys  field
+  #     hrforecast_datetime_format %Y-%m-%d
+  # ]
+  def test_datetime_format
+    d = create_driver(CONFIG_HRFORECAST_DATETIME_FORMAT, 'test.service')
+    d.emit({'field' => 50})
+    d.run
+
+    assert_equal 1, @posted.size
+    v1st = @posted[0]
+
+    assert_equal 50, v1st[:data][:number]
+    assert_nil v1st[:data][:mode]
+    assert_match /^\d{4}-\d{2}-\d{2}$/, v1st[:data][:datetime]
+  end
+
   # setup / teardown for servers
   def setup
     Fluent::Test.setup
@@ -590,7 +618,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
               :section => section,
               :name => graph_name,
               :auth => nil,
-              :data => { :number => number, :mode => post_param['mode'] },
+              :data => { :number => number, :mode => post_param['mode'], :datetime => post_param['datetime']},
             })
 
           res.status = 200

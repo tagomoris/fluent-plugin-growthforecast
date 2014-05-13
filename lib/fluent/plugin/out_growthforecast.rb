@@ -6,6 +6,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     require 'net/http'
     require 'uri'
     require 'resolve/hostname'
+    require 'date'
   end
 
   config_param :gfapi_url, :string # growth.forecast.local/api/
@@ -21,6 +22,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   config_param :name_key_pattern, :string, :default => nil
 
   config_param :mode, :string, :default => 'gauge' # or count/modified
+  config_param :hrforecast_datetime_format, :string, :default => nil
 
   config_param :remove_prefix, :string, :default => nil
   config_param :tag_for, :string, :default => 'name_prefix' # or 'ignore' or 'section' or 'service'
@@ -202,7 +204,11 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       req['Connection'] = 'Keep-Alive'
     end
     value = @enable_float_number ? value.to_f : value.to_i
-    req.set_form_data({'number' => value, 'mode' => @mode.to_s})
+    if @hrforecast_datetime_format
+      req.set_form_data({'number' => value, 'datetime' => DateTime.now().strftime(@hrforecast_datetime_format)})
+    else
+      req.set_form_data({'number' => value, 'mode' => @mode.to_s})
+    end
     req
   end
 

@@ -6,7 +6,6 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     require 'net/http'
     require 'uri'
     require 'resolve/hostname'
-    require 'date'
   end
 
   config_param :gfapi_url, :string # growth.forecast.local/api/
@@ -193,7 +192,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     http
   end
 
-  def post_request(tag, name, value)
+  def post_request(tag, name, value, time)
     url = URI.parse(format_url(tag,name))
     req = Net::HTTP::Post.new(url.path)
     if @auth and @auth == :basic
@@ -205,19 +204,19 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     end
     value = @enable_float_number ? value.to_f : value.to_i
     if @hrforecast_datetime_format
-      req.set_form_data({'number' => value, 'datetime' => DateTime.now().strftime(@hrforecast_datetime_format)})
+      req.set_form_data({'number' => value, 'datetime' => Time.at(time).strftime(@hrforecast_datetime_format)})
     else
       req.set_form_data({'number' => value, 'mode' => @mode.to_s})
     end
     req
   end
 
-  def post(tag, name, value)
+  def post(tag, name, value, time)
     url = format_url(tag,name)
     res = nil
     begin
       host,port = connect_to(tag, name)
-      req = post_request(tag, name, value)
+      req = post_request(tag, name, value, time)
       http = http_connection(host, port)
       res = http.start {|http| http.request(req) }
     rescue IOError, EOFError, SystemCallError
@@ -235,7 +234,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     # gf host/port is same for all events (host is from configuration)
     host,port = connect_to(events.first[:tag], events.first[:name])
 
-    requests = events.map{|e| post_request(e[:tag], e[:name], e[:value])}
+    requests = events.map{|e| post_request(e[:tag], e[:name], e[:value], e[:time])}
 
     http = nil
     requests.each do |req|
@@ -270,7 +269,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       post_keepalive(events)
     else
       events.each do |event|
-        post(event[:tag], event[:name], event[:value])
+        post(event[:tag], event[:name], event[:value], event[:time])
       end
     end
   end
@@ -281,7 +280,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       es.each {|time,record|
         @name_keys.each_with_index {|name, i|
           if value = record[name]
-            events.push({:tag => tag, :name => (@graphs ? @graphs[i] : name), :value => value})
+            events.push({:tag => tag, :name => (@graphs ? @graphs[i] : name), :value => value, :time => time})
           end
         }
       }
@@ -289,7 +288,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
       es.each {|time,record|
         record.keys.each {|key|
           if @name_key_pattern.match(key) and record[key]
-            events.push({:tag => tag, :name => key, :value => record[key]})
+            events.push({:tag => tag, :name => key, :value => record[key], :time => time})
           end
         }
       }

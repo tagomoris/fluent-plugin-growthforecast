@@ -21,7 +21,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
   config_param :name_key_pattern, :string, :default => nil
 
   config_param :mode, :string, :default => 'gauge' # or count/modified
-  config_param :hrforecast_datetime_format, :string, :default => nil
+  config_param :datetime_format, :string, :default => nil
 
   config_param :remove_prefix, :string, :default => nil
   config_param :tag_for, :string, :default => 'name_prefix' # or 'ignore' or 'section' or 'service'
@@ -202,12 +202,14 @@ class Fluent::GrowthForecastOutput < Fluent::Output
     if @keepalive
       req['Connection'] = 'Keep-Alive'
     end
-    value = @enable_float_number ? value.to_f : value.to_i
-    if @hrforecast_datetime_format
-      req.set_form_data({'number' => value, 'datetime' => Time.at(time).strftime(@hrforecast_datetime_format)})
-    else
-      req.set_form_data({'number' => value, 'mode' => @mode.to_s})
+    form_data = {
+      'number' => @enable_float_number ? value.to_f : value.to_i,
+      'mode' => @mode.to_s
+    }
+    if @datetime_format
+      form_data['datetime'] = Time.at(time).strftime(@datetime_format)
     end
+    req.set_form_data(form_data)
     req
   end
 

@@ -119,6 +119,23 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       remove_prefix test
   ]
 
+  CONFIG_DATETIME_FORMAT = %[
+      gfapi_url  http://127.0.0.1:5125/api/
+      service    service
+      section    metrics
+      name_keys  field
+      datetime_format %Y-%m-%d %H:%M:%S %z
+  ]
+
+  CONFIG_DATETIME_FORMAT_NON_KEEPALIVE = %[
+      gfapi_url  http://127.0.0.1:5125/api/
+      service    service
+      section    metrics
+      name_keys  field
+      datetime_format %Y-%m-%d
+      keepalive  false
+  ]
+
   def create_driver(conf=CONFIG1, tag='test.metrics')
     Fluent::Test::OutputTestDriver.new(Fluent::GrowthForecastOutput, tag).configure(conf)
   end
@@ -547,6 +564,51 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 'service_otherfield', v3rd[:name]
   end
 
+  # CONFIG_DATETIME = %[
+  #     gfapi_url  http://127.0.0.1:5125/api/
+  #     service    service
+  #     section    metrics
+  #     name_keys  field
+  #     datetime_format %Y-%m-%d %H:%M:%S %z
+  # ]
+  def test_datetime_format
+    time = Time.now()
+    d = create_driver(CONFIG_DATETIME_FORMAT, 'test.service')
+    d.emit({'field' => 50}, time)
+    d.run
+
+    assert_equal 1, @posted.size
+    v1st = @posted[0]
+
+    assert_equal 50, v1st[:data][:number]
+    assert_equal 'gauge', v1st[:data][:mode]
+    assert_equal time.strftime('%Y-%m-%d %H:%M:%S %z'), v1st[:data][:datetime]
+  end
+
+  # CONFIG_DATETIME_FORMAT_NON_KEEPALIVE = %[
+  #     gfapi_url  http://127.0.0.1:5125/api/
+  #     service    service
+  #     section    metrics
+  #     name_keys  field
+  #     datetime_format %Y-%m-%d
+  #     keepalive  false
+  # ]
+  def test_datetime_format_non_keepalive
+    time = Time.now()
+    d = create_driver(CONFIG_DATETIME_FORMAT_NON_KEEPALIVE, 'test.service')
+    d.emit({'field' => 50}, time)
+    d.run
+
+    assert_equal 1, @posted.size
+    v1st = @posted[0]
+
+    assert_equal 50, v1st[:data][:number]
+    assert_equal 'gauge', v1st[:data][:mode]
+    assert_equal time.strftime('%Y-%m-%d'), v1st[:data][:datetime]
+  end
+
+
+
   # setup / teardown for servers
   def setup
     Fluent::Test.setup
@@ -585,12 +647,13 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
           post_param = Hash[*(req.body.split('&').map{|kv|kv.split('=')}.flatten)]
 
           number = @enable_float_number ? post_param['number'].to_f : post_param['number'].to_i
+          datetime = URI.decode_www_form_component(post_param['datetime']) if post_param['datetime']
           @posted.push({
               :service => service,
               :section => section,
               :name => graph_name,
               :auth => nil,
-              :data => { :number => number, :mode => post_param['mode'] },
+              :data => { :number => number, :mode => post_param['mode'], :datetime => datetime},
             })
 
           res.status = 200

@@ -150,7 +150,13 @@ Version v0.2.0 or later, this plugin uses HTTP connection keep-alive for a batch
 * mode
 
     The graph mode (either of `gauge`, `count`, or `modified`). Just same as `mode` of GrowthForecast POST parameter. Default is `gauge`. 
-    
+
+* datetime_format
+
+    Send `datetime` POST parameter too if specified. (Default is not specified)
+    Time is formatted by this option, e.g. `%Y-%m-%d %H:%M:%S %z`
+    (see http://ruby-doc.org/core/Time.html#method-i-strftime)
+
 * keepalive
 
     Use a keepalive HTTP connection. Default is false.

@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |gem|
   gem.name          = "fluent-plugin-growthforecast"
-  gem.version       = "0.2.7"
+  gem.version       = "0.2.8"
   gem.authors       = ["TAGOMORI Satoshi"]
   gem.email         = ["tagomoris@gmail.com"]
   gem.summary       = %q{Fluentd output plugin to post numbers to GrowthForecast (by kazeburo)}
@@ -17,6 +17,6 @@ Gem::Specification.new do |gem|
 
   gem.add_development_dependency "rake"
   gem.add_runtime_dependency "fluentd"
-  gem.add_runtime_dependency "fluent-mixin-config-placeholders"
+  gem.add_runtime_dependency "fluent-mixin-config-placeholders", ">= 0.3.0"
   gem.add_runtime_dependency "resolve-hostname", ">= 0.0.4"
 end

@@ -34,7 +34,7 @@ class Fluent::GrowthForecastOutput < Fluent::Output
 
   config_param :authentication, :string, :default => nil # nil or 'none' or 'basic'
   config_param :username, :string, :default => ''
-  config_param :password, :string, :default => ''
+  config_param :password, :string, :default => '', :secret => true
 
   DEFAULT_GRAPH_PATH = {
     :ignore => '${service}/${section}/${key_name}',

@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |gem|
   gem.name          = "fluent-plugin-growthforecast"
-  gem.version       = "0.2.9"
+  gem.version       = "0.2.10"
   gem.authors       = ["TAGOMORI Satoshi"]
   gem.email         = ["tagomoris@gmail.com"]
   gem.summary       = %q{Fluentd output plugin to post numbers to GrowthForecast (by kazeburo)}

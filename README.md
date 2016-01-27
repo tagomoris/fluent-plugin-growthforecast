@@ -19,7 +19,7 @@ For messages such as:
 Configuration example for graphs in growthforecast with POST api url 'http://growthforecast.local/api/service1/metrics1/metrics_FIELDNAME'.
 
     <match metrics>
-      type growthforecast
+      @type growthforecast
       gfapi_url http://growthforecast.local/api/
       service   service1
       section   metrics1
@@ -35,7 +35,7 @@ With this configuration, out_growthforecast posts urls below.
 If you want to use tags for `section` or `service`  in GrowthForecast, use `tag_for` options and `remove_prefix` (and not to set the `section` or `service` that the value of 'tag_for' used to.).
 
     <match metrics.**>
-      type growthforecast
+      @type growthforecast
       gfapi_url http://growthforecast.local/api/
       service   service1
       name_keys field1,field2,field3diff
@@ -48,7 +48,7 @@ If you want to use tags for `section` or `service`  in GrowthForecast, use `tag_
 `name_key_pattern REGEXP` available instead of `name_keys` like this:
 
     <match metrics.**>
-      type growthforecast
+      @type growthforecast
       gfapi_url http://growthforecast.local/api/
       service   service1
       tag_for   section    # or 'name_prefix'(default) or 'ignore' or 'service'
@@ -61,7 +61,7 @@ This configuration matches only with metrics.field1, metrics.key20, .... and doe
 If you want to customise for more flexible graph path, use `graph_path` option with `${tag}` and `${key_name}` placeholders.
 
     <match test.service1>
-      type growthforecast
+      @type growthforecast
       gfapi_url http://growthforecast.local/api/
       graph_path ${tag}/metrics1/${tag}_${key_name}
       name_keys field1,field2,field3diff
@@ -77,7 +77,7 @@ With this configuration, out_growthforecast posts urls below.
 If your GrowthForecast protected with basic authentication, specify `authentication` option:
 
     <match metrics.**>
-      type growthforecast
+      @type growthforecast
       gfapi_url http://growthforecast.protected.anywhere.example.com/api/
       service   yourservice
       tag_for   section
@@ -90,7 +90,7 @@ If your GrowthForecast protected with basic authentication, specify `authenticat
 Version v0.2.0 or later, this plugin uses HTTP connection keep-alive for a batch emitted events. To disable this, specify `keepalive` option:
 
     <match metrics.**>
-      type growthforecast
+      @type growthforecast
       gfapi_url http://growthforecast.protected.anywhere.example.com/api/
       service   yourservice
       tag_for   section

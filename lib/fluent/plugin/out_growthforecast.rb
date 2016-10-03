@@ -1,11 +1,12 @@
-class Fluent::GrowthForecastOutput < Fluent::Output
+require 'net/http'
+require 'uri'
+require 'resolve/hostname'
+
+class Fluent::Plugin::GrowthForecastOutput < Fluent::Plugin::Output
   Fluent::Plugin.register_output('growthforecast', self)
 
   def initialize
     super
-    require 'net/http'
-    require 'uri'
-    require 'resolve/hostname'
   end
 
   config_param :gfapi_url, :string, # growth.forecast.local/api/
@@ -309,7 +310,7 @@ DESC
     end
   end
 
-  def emit(tag, es, chain)
+  def process(tag, es)
     events = []
     if @name_keys
       es.each {|time,record|
@@ -340,7 +341,5 @@ DESC
         raise if @retry
       end
     end
-
-    chain.next
   end
 end

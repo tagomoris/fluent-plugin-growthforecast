@@ -1,4 +1,5 @@
 require 'helper'
+require 'fluent/test/driver/output'
 
 class GrowthForecastOutputTest < Test::Unit::TestCase
   # setup/teardown and tests of dummy growthforecast server defined at the end of this class...
@@ -119,8 +120,8 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       remove_prefix test
   ]
 
-  def create_driver(conf=CONFIG1, tag='test.metrics')
-    Fluent::Test::OutputTestDriver.new(Fluent::GrowthForecastOutput, tag).configure(conf)
+  def create_driver(conf=CONFIG1)
+    Fluent::Test::Driver::Output.new(Fluent::Plugin::GrowthForecastOutput).configure(conf)
   end
 
   def test_configure_and_format_url
@@ -170,9 +171,10 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   #     tag_for   name_prefix
   # ]
   def test_emit_1
-    d = create_driver(CONFIG1, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run
+    d = create_driver(CONFIG1)
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]
@@ -202,9 +204,10 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   #     mode count
   # ]
   def test_emit_2
-    d = create_driver(CONFIG2, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run
+    d = create_driver(CONFIG2)
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]
@@ -234,10 +237,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   #     mode modified
   # ]
   def test_emit_3
-    d = create_driver(CONFIG3, 'test.metrics')
-    # recent ruby's Hash saves elements order....
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run
+    d = create_driver(CONFIG3)
+    d.run(default_tag: 'test.metrics') do
+      # recent ruby's Hash saves elements order....
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]
@@ -268,9 +272,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   def test_emit_4_auth
     @auth = true # enable authentication of dummy server
 
-    d = create_driver(CONFIG1, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run # failed in background, and output warn log
+    d = create_driver(CONFIG1)
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+      # failed in background, and output warn log
+    end
 
     assert_equal 0, @posted.size
     assert_equal 3, @prohibited
@@ -279,9 +285,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       authentication basic
       username alice
       password wrong_password
-    ], 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run # failed in background, and output warn log
+    ])
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+      # failed in background, and output warn log
+    end
 
     assert_equal 0, @posted.size
     assert_equal 6, @prohibited
@@ -290,9 +298,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       authentication basic
       username alice
       password secret!
-    ], 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run # failed in background, and output warn log
+    ])
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+      # failed in background, and output warn log
+    end
 
     assert_equal 6, @prohibited
     assert_equal 3, @posted.size
@@ -307,10 +317,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   # ]
 
   def test_emit_5
-    d = create_driver(CONFIG4, 'test.service')
-    # recent ruby's Hash saves elements order....
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run
+    d = create_driver(CONFIG4)
+    d.run(default_tag: 'test.service') do
+      # recent ruby's Hash saves elements order....
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]
@@ -339,9 +350,10 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   #     tag_for   ignore
   # ]
   def test_with_space_1
-    d = create_driver(CONFIG_SPACE, 'test.foo')
-    d.emit({ 'field z' => 3 })
-    d.run
+    d = create_driver(CONFIG_SPACE)
+    d.run(default_tag: 'test.foo') do
+      d.feed({ 'field z' => 3 })
+    end
 
     assert_equal 1, @posted.size
     v = @posted[0]
@@ -363,9 +375,10 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   #     keepalive false
   # ]
   def test_non_keepalive
-    d = create_driver(CONFIG_NON_KEEPALIVE, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run
+    d = create_driver(CONFIG_NON_KEEPALIVE)
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]
@@ -397,10 +410,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   #     timeout   120
   # ]
   def test_threading
-    d = create_driver(CONFIG_THREADING_KEEPALIVE, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run
-    sleep 0.5 # wait internal posting thread loop
+    d = create_driver(CONFIG_THREADING_KEEPALIVE)
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+      sleep 0.5 # wait internal posting thread loop
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]
@@ -431,10 +445,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   #     keepalive false
   # ]
   def test_threading_non_keepalive
-    d = create_driver(CONFIG_THREADING_NON_KEEPALIVE, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run
-    sleep 0.5 # wait internal posting thread loop
+    d = create_driver(CONFIG_THREADING_NON_KEEPALIVE)
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+      sleep 0.5 # wait internal posting thread loop
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]
@@ -465,9 +480,10 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   #     tag_for   name_prefix
   # ]
   def test_graphs
-    d = create_driver(CONFIG_GRAPHS, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run
+    d = create_driver(CONFIG_GRAPHS)
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]
@@ -499,9 +515,10 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   def test_enable_float_number
     @enable_float_number = true # enable float number of dummy server
 
-    d = create_driver(CONFIG_ENABLE_FLOAT_NUMBER, 'test.metrics')
-    d.emit({ 'field1' => 50.5, 'field2' => -20.1, 'field3' => 10, 'otherfield' => 1 })
-    d.run
+    d = create_driver(CONFIG_ENABLE_FLOAT_NUMBER)
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50.5, 'field2' => -20.1, 'field3' => 10, 'otherfield' => 1 })
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]
@@ -523,10 +540,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   end
 
   def test_gfapi_path
-    d = create_driver(CONFIG_GFAPI_PATH, 'test.service')
-    # recent ruby's Hash saves elements order....
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run
+    d = create_driver(CONFIG_GFAPI_PATH)
+    d.run(default_tag: 'test.service') do
+      # recent ruby's Hash saves elements order....
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]

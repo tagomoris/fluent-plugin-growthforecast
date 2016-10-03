@@ -532,7 +532,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 'metrics', v1st[:section]
     assert_equal 'test.metrics_field1', v1st[:name]
 
-    assert_equal -20.1, v2nd[:data][:number]
+    assert_equal (-20.1), v2nd[:data][:number]
     assert_equal 'test.metrics_field2', v2nd[:name]
 
     assert_equal 1, v3rd[:data][:number]
@@ -626,7 +626,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     # to wait completion of dummy server.start()
     require 'thread'
     cv = ConditionVariable.new
-    watcher = Thread.new {
+    _watcher = Thread.new {
       connected = false
       while not connected
         begin

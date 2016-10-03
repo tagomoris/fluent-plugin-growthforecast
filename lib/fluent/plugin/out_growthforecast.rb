@@ -288,7 +288,7 @@ DESC
         log.warn "net/http keepalive POST raises exception: #{$!.class}, '#{$!.message}'"
         begin
           http.finish
-        rescue => e
+        rescue
           # ignore all errors for connection with error
         end
         http = nil
@@ -296,7 +296,7 @@ DESC
     end
     begin
       http.finish
-    rescue => e
+    rescue
       # ignore
     end
   end

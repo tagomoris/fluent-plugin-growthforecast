@@ -5,6 +5,8 @@ require 'resolve/hostname'
 class Fluent::Plugin::GrowthForecastOutput < Fluent::Plugin::Output
   Fluent::Plugin.register_output('growthforecast', self)
 
+  helpers :thread
+
   def initialize
     super
   end
@@ -170,13 +172,12 @@ DESC
     if @background_post
       @mutex = Mutex.new
       @queue = []
-      @thread = Thread.new(&method(:poster))
+      thread_create(:out_growthforecast_poster, &method(:poster))
     end
   end
 
   def shutdown
     @running = false
-    @thread.join if @thread
     super
   end
 
@@ -329,7 +330,7 @@ DESC
         }
       }
     end
-    if @thread
+    if thread_running?(:out_growthforecast_poster)
       @mutex.synchronize do
         @queue += events
       end

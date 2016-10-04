@@ -12,78 +12,78 @@ class Fluent::Plugin::GrowthForecastOutput < Fluent::Plugin::Output
   end
 
   config_param :gfapi_url, :string, # growth.forecast.local/api/
-               :desc => 'The URL of a GrowthForecast API endpoint.'
-  config_param :graph_path, :string, :default => nil,
-               :desc => <<-DESC
+               desc: 'The URL of a GrowthForecast API endpoint.'
+  config_param :graph_path, :string, default: nil,
+               desc: <<-DESC
 The graph path for GrowthForecast API endpoint with the order of service, section, graph_name.
 DESC
-  config_param :service, :string, :default => nil,
-               :desc => 'The service_name of graphs to create.'
-  config_param :section, :string, :default => nil,
-               :desc => 'The section_name of graphs to create.'
-  config_param :graphs, :string, :default => nil,
-               :desc => <<-DESC
+  config_param :service, :string, default: nil,
+               desc: 'The service_name of graphs to create.'
+  config_param :section, :string, default: nil,
+               desc: 'The section_name of graphs to create.'
+  config_param :graphs, :string, default: nil,
+               desc: <<-DESC
 You may use this option to specify graph names correspond to each of name_keys.
 Separate by , (comma). The number of graph names must be same with the number of name_keys.
 DESC
 
-  config_param :ssl, :bool, :default => false,
-               :desc => 'Use SSL (https) or not.'
-  config_param :verify_ssl, :bool, :default => false,
-               :desc => 'Do SSL verification or not.'
+  config_param :ssl, :bool, default: false,
+               desc: 'Use SSL (https) or not.'
+  config_param :verify_ssl, :bool, default: false,
+               desc: 'Do SSL verification or not.'
 
-  config_param :name_keys, :string, :default => nil,
-               :desc => <<-DESC
+  config_param :name_keys, :string, default: nil,
+               desc: <<-DESC
 Specify field names of the input record. Separate by , (comma).
 The values of these fields are posted as numbers, and names of thease fields are used as parts of grame_names.
 Either of name_keys or name_key_pattern is required.
 DESC
-  config_param :name_key_pattern, :string, :default => nil,
-               :desc => <<-DESC
+  config_param :name_key_pattern, :string, default: nil,
+               desc: <<-DESC
 Specify the field names of the input record by a regular expression.
 The values of these fields are posted as numbers,
 and names of thease fields are used as parts of grame_names.
 Either of name_keys or name_key_pattern is required.
 DESC
 
-  config_param :mode, :string, :default => 'gauge', # or count/modified
-               :desc => <<-DESC
+  config_param :mode, :string, default: 'gauge', # or count/modified
+               desc: <<-DESC
 The graph mode (either of gauge, count, or modified).
 Just same as mode of GrowthForecast POST parameter.
 DESC
 
-  config_param :remove_prefix, :string, :default => nil,
-               :desc => 'The prefix string which will be removed from the tag.'
-  config_param :tag_for, :string, :default => 'name_prefix', # or 'ignore' or 'section' or 'service'
-               :desc => 'Either of name_prefix, section, service, or ignore.'
+  config_param :remove_prefix, :string, default: nil,
+               desc: 'The prefix string which will be removed from the tag.'
+  config_param :tag_for, :string, default: 'name_prefix', # or 'ignore' or 'section' or 'service'
+               desc: 'Either of name_prefix, section, service, or ignore.'
 
-  config_param :background_post, :bool, :default => false,
-               :desc => 'Post to GrowthForecast in background thread, without retries for failures'
+  config_param :background_post, :bool, default: false,
+               desc: 'Post to GrowthForecast in background thread, without retries for failures'
 
-  config_param :timeout, :integer, :default => nil, # default 60secs
-               :desc => 'Read/Write timeout seconds'
-  config_param :retry, :bool, :default => true,
-               :desc => <<-DESC
+  config_param :timeout, :integer, default: nil, # default 60secs
+               desc: 'Read/Write timeout seconds'
+  config_param :retry, :bool, default: true,
+               desc: <<-DESC
 Do retry for HTTP request failures, or not.
 This feature will be set as false for background_post yes automatically.
 DESC
-  config_param :keepalive, :bool, :default => true,
-               :desc => 'Use a keepalive HTTP connection.'
-  config_param :enable_float_number, :bool, :default => false,
-               :desc => 'Post a floating number rather than an interger number.'
+  config_param :keepalive, :bool, default: true,
+               desc: 'Use a keepalive HTTP connection.'
+  config_param :enable_float_number, :bool, default: false,
+               desc: 'Post a floating number rather than an interger number.'
 
-  config_param :authentication, :string, :default => nil, # nil or 'none' or 'basic'
-               :desc => 'Specify basic if your GrowthForecast protected with basic authentication.'
-  config_param :username, :string, :default => '',
-               :desc => 'The username for authentication.'
-  config_param :password, :string, :default => '', :secret => true,
-               :desc => 'The password for authentication.'
+  config_param :authentication, :string, default: nil, # nil or 'none' or 'basic'
+               desc: 'Specify basic if your GrowthForecast protected with basic authentication.'
+  config_param :username, :string, default: '',
+               desc: 'The username for authentication.'
+  config_param :password, :string, default: '', secret: true,
+               desc: 'The password for authentication.'
 
   DEFAULT_GRAPH_PATH = {
-    :ignore => '${service}/${section}/${key_name}',
-    :service => '${tag}/${section}/${key_name}',
-    :section => '${service}/${tag}/${key_name}',
-    :name_prefix => '${service}/${section}/${tag}_${key_name}',
+    ignore: '${service}/${section}/${key_name}',
+    service: '${tag}/${section}/${key_name}',
+    section: '${service}/${tag}/${key_name}',
+    name_prefix: '${service}/${section}/${tag}_${key_name}',
   }
 
   # Define `log` method for v0.10.42 or earlier
@@ -159,7 +159,7 @@ DESC
             else
               :none
             end
-    @resolver = Resolve::Hostname.new(:system_resolver => true)
+    @resolver = Resolve::Hostname.new(system_resolver: true)
   end
 
   def start
@@ -195,7 +195,7 @@ DESC
       begin
         post_events(events) if events.size > 0
       rescue => e
-        log.warn "HTTP POST in background Error occures to growthforecast server", :error_class => e.class, :error => e.message
+        log.warn "HTTP POST in background Error occures to growthforecast server", error_class: e.class, error: e.message
       end
     end
   end
@@ -317,7 +317,7 @@ DESC
       es.each {|time,record|
         @name_keys.each_with_index {|name, i|
           if value = record[name]
-            events.push({:tag => tag, :name => (@graphs ? @graphs[i] : name), :value => value})
+            events.push({tag: tag, name: (@graphs ? @graphs[i] : name), value: value})
           end
         }
       }
@@ -325,7 +325,7 @@ DESC
       es.each {|time,record|
         record.keys.each {|key|
           if @name_key_pattern.match(key) and record[key]
-            events.push({:tag => tag, :name => key, :value => record[key]})
+            events.push({tag: tag, name: key, value: record[key]})
           end
         }
       }
@@ -338,7 +338,7 @@ DESC
       begin
         post_events(events)
       rescue => e
-        log.warn "HTTP POST Error occures to growthforecast server", :error_class => e.class, :error => e.message
+        log.warn "HTTP POST Error occures to growthforecast server", error_class: e.class, error: e.message
         raise if @retry
       end
     end

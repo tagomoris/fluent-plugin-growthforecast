@@ -574,10 +574,10 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     @enable_float_number = false
     @dummy_server_thread = Thread.new do
       srv = if ENV['VERBOSE']
-              WEBrick::HTTPServer.new({:BindAddress => '127.0.0.1', :Port => GF_TEST_LISTEN_PORT})
+              WEBrick::HTTPServer.new({BindAddress: '127.0.0.1', Port: GF_TEST_LISTEN_PORT})
             else
               logger = WEBrick::Log.new('/dev/null', WEBrick::BasicLog::DEBUG)
-              WEBrick::HTTPServer.new({:BindAddress => '127.0.0.1', :Port => GF_TEST_LISTEN_PORT, :Logger => logger, :AccessLog => []})
+              WEBrick::HTTPServer.new({BindAddress: '127.0.0.1', Port: GF_TEST_LISTEN_PORT, Logger: logger, AccessLog: []})
             end
       begin
         srv.mount_proc('/api') { |req,res| # /api/:service/:section/:name
@@ -604,11 +604,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
 
           number = @enable_float_number ? post_param['number'].to_f : post_param['number'].to_i
           @posted.push({
-              :service => service,
-              :section => section,
-              :name => graph_name,
-              :auth => nil,
-              :data => { :number => number, :mode => post_param['mode'] },
+              service: service,
+              section: section,
+              name: graph_name,
+              auth: nil,
+              data: { number: number, mode: post_param['mode'] },
             })
 
           res.status = 200

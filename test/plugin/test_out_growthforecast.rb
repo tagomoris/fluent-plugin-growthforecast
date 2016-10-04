@@ -361,9 +361,9 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 3, v[:data][:number]
     assert_equal 'gauge', v[:data][:mode]
     assert_nil v[:auth]
-    assert_equal 'service x', v[:service]
-    assert_equal 'metrics y', v[:section]
-    assert_equal 'field z', v[:name]
+    assert_equal 'service+x', v[:service]
+    assert_equal 'metrics+y', v[:section]
+    assert_equal 'field+z', v[:name]
   end
 
   # CONFIG_NON_KEEPALIVE = %[

@@ -1,5 +1,6 @@
 require 'net/http'
 require 'uri'
+require 'cgi/util'
 require 'resolve/hostname'
 
 class Fluent::Plugin::GrowthForecastOutput < Fluent::Plugin::Output
@@ -205,12 +206,17 @@ DESC
         ( (tag.start_with?(@removed_prefix_string) and tag.length > @removed_length) or tag == @remove_prefix)
       tag = tag[@removed_length..-1]
     end
-    {'${service}' => @service, '${section}' => @section, '${tag}' => tag, '${key_name}' => name}
+    {'${service}' => escape(@service), '${section}' => escape(@section), '${tag}' => escape(tag), '${key_name}' => escape(name)}
+  end
+
+  def escape(param)
+    escaped ||= param
+    escaped = CGI.escape(param) if param
   end
 
   def format_url(tag, name)
     graph_path = @graph_path.gsub(/(\${[_a-z]+})/, placeholder_mapping(tag, name))
-    return @gfapi_url + URI.escape(graph_path)
+    return @gfapi_url + graph_path
   end
 
   def connect_to(tag, name)

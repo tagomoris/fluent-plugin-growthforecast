@@ -654,9 +654,10 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     host = server.split(':')[0]
     port = server.split(':')[1].to_i
     client = Net::HTTP.start(host, port)
+    content_type = {'Content-Type' => 'application/x-www-form-urlencoded'}
 
     assert_equal '200', client.request_get('/').code
-    assert_equal '200', client.request_post('/api/service/metrics/hoge', 'number=1&mode=gauge').code
+    assert_equal '200', client.request_post('/api/service/metrics/hoge', 'number=1&mode=gauge', initheader = content_type).code
 
     assert_equal 1, @posted.size
 
@@ -667,7 +668,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 'metrics', @posted[0][:section]
     assert_equal 'hoge', @posted[0][:name]
 
-    assert_equal '200', client.request_post(URI.escape('/api/service x/metrics/hoge'), 'number=1&mode=gauge').code
+    assert_equal '200', client.request_post(URI.escape('/api/service x/metrics/hoge'), 'number=1&mode=gauge', initheader = content_type).code
 
     assert_equal 2, @posted.size
 
@@ -680,7 +681,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
 
     @auth = true
 
-    assert_equal '403', client.request_post('/api/service/metrics/pos', 'number=30&mode=gauge').code
+    assert_equal '403', client.request_post('/api/service/metrics/pos', 'number=30&mode=gauge', initheader = content_type).code
 
     req_with_auth = lambda do |number, mode, user, pass|
       url = URI.parse("http://#{host}:#{port}/api/service/metrics/pos")

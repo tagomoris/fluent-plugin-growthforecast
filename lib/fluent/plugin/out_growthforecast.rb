@@ -331,7 +331,7 @@ DESC
       begin
         post_events(events)
       rescue => e
-        log.warn "HTTP POST Error occures to growthforecast server", error_class: e.class, error: e.message
+        log.warn "HTTP POST Error occures to growthforecast server", error: e
         raise if @retry
       end
     end

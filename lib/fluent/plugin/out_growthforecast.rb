@@ -6,8 +6,6 @@ require 'resolve/hostname'
 class Fluent::Plugin::GrowthForecastOutput < Fluent::Plugin::Output
   Fluent::Plugin.register_output('growthforecast', self)
 
-  helpers :timer
-
   def initialize
     super
   end
@@ -161,31 +159,11 @@ DESC
   def start
     super
 
-    @queue = nil
     @mutex = nil
-    if @background_post
-      @mutex = Mutex.new
-      @queue = []
-      timer_execute(:out_growthforecast_poster, 0.2, &method(:poster))
-    end
   end
 
   def shutdown
     super
-  end
-
-  def poster
-    until @queue.empty?
-      events = @mutex.synchronize {
-        es,@queue = @queue,[]
-        es
-      }
-      begin
-        post_events(events) if events.size > 0
-      rescue => e
-        log.warn "HTTP POST in background Error occures to growthforecast server", error_class: e.class, error: e.message
-      end
-    end
   end
 
   def placeholder_mapping(tag, name)
@@ -304,6 +282,39 @@ DESC
     end
   end
 
+  def prefer_buffered_processing
+    @background_post
+  end
+
+  def format(tag, time, record)
+    [tag, time, record].to_msgpack
+  end
+
+  def write(chunk)
+    events = []
+    chunk.msgpack_each do |tag, time, record|
+      if @name_keys
+        @name_keys.each_with_index {|name, i|
+          if value = record[name]
+            events.push({tag: tag, name: (@graphs ? @graphs[i] : name), value: value})
+          end
+        }
+      else # for name_key_pattern
+        record.keys.each {|key|
+          if @name_key_pattern.match(key) and record[key]
+            events.push({tag: tag, name: key, value: record[key]})
+          end
+        }
+      end
+    end
+    begin
+      post_events(events)
+    rescue => e
+      log.warn "HTTP POST Error occures to growthforecast server", error: e
+      raise if @retry
+    end
+  end
+
   def process(tag, es)
     events = []
     if @name_keys
@@ -323,17 +334,11 @@ DESC
         }
       }
     end
-    if @background_post
-      @mutex.synchronize do
-        @queue += events
-      end
-    else
-      begin
-        post_events(events)
-      rescue => e
-        log.warn "HTTP POST Error occures to growthforecast server", error: e
-        raise if @retry
-      end
+    begin
+      post_events(events)
+    rescue => e
+      log.warn "HTTP POST Error occures to growthforecast server", error: e
+      raise if @retry
     end
   end
 end

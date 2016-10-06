@@ -156,10 +156,12 @@ DESC
     @resolver = Resolve::Hostname.new(system_resolver: true)
   end
 
+  def prefer_buffered_processing
+    @background_post
+  end
+
   def start
     super
-
-    @mutex = nil
   end
 
   def shutdown
@@ -256,19 +258,13 @@ DESC
           log.warn "failed to post to growthforecast: #{host}:#{port}#{req.path}, post_data: #{req.body} code: #{res && res.code}"
         end
       rescue IOError, EOFError, Errno::ECONNRESET, Errno::ETIMEDOUT, SystemCallError
-        log.warn "net/http keepalive POST raises exception: #{$!.class}, '#{$!.message}'"
-        begin
-          http.finish
-        rescue
-          # ignore all errors for connection with error
-        end
+        log.warn "net/http keepalive POST raises exception", error: $!
+        http.finish rescue nil # ignore all errors for connection with error
         http = nil
       end
     end
-    begin
-      http.finish
-    rescue
-      # ignore
+    if http
+      http.finish rescue nil
     end
   end
 
@@ -282,60 +278,52 @@ DESC
     end
   end
 
-  def prefer_buffered_processing
-    @background_post
+  def gf_events(tag, time, record)
+    events = []
+    if @name_keys
+      @name_keys.each_with_index do |name, i|
+        if value = record[name]
+          events.push({tag: tag, name: (@graphs ? @graphs[i] : name), value: value})
+        end
+      end
+    else # for name_key_pattern
+      record.keys.each do |key|
+        if @name_key_pattern.match(key) and record[key]
+          events.push({tag: tag, name: key, value: record[key]})
+        end
+      end
+    end
+    events
+  end
+
+  def gf_events_from_es(tag, es)
+    events = []
+    es.each do |time, record|
+      events.concat(gf_events(tag, time, record))
+    end
+    events
   end
 
   def format(tag, time, record)
     [tag, time, record].to_msgpack
   end
 
-  def write(chunk)
-    events = []
-    chunk.msgpack_each do |tag, time, record|
-      if @name_keys
-        @name_keys.each_with_index {|name, i|
-          if value = record[name]
-            events.push({tag: tag, name: (@graphs ? @graphs[i] : name), value: value})
-          end
-        }
-      else # for name_key_pattern
-        record.keys.each {|key|
-          if @name_key_pattern.match(key) and record[key]
-            events.push({tag: tag, name: key, value: record[key]})
-          end
-        }
-      end
-    end
+  def process(tag, es)
+    events = gf_events_from_es(tag, es)
     begin
       post_events(events)
     rescue => e
-      log.warn "HTTP POST Error occures to growthforecast server", error: e
-      raise if @retry
+      log.warn "HTTP POST Error occurs to growthforecast server, ignored (use background_post for retries)", error: e
     end
   end
 
-  def process(tag, es)
+  def write(chunk)
     events = []
-    if @name_keys
-      es.each {|time,record|
-        @name_keys.each_with_index {|name, i|
-          if value = record[name]
-            events.push({tag: tag, name: (@graphs ? @graphs[i] : name), value: value})
-          end
-        }
-      }
-    else # for name_key_pattern
-      es.each {|time,record|
-        record.keys.each {|key|
-          if @name_key_pattern.match(key) and record[key]
-            events.push({tag: tag, name: key, value: record[key]})
-          end
-        }
-      }
+    chunk.msgpack_each do |tag, time, record|
+      events << gf_events(tag, time, record)
     end
     begin
-      post_events(events)
+      post_events(events.first) # should pass [...] instead of [[...]]
     rescue => e
       log.warn "HTTP POST Error occures to growthforecast server", error: e
       raise if @retry

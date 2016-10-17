@@ -304,6 +304,10 @@ DESC
     events
   end
 
+  def formatted_to_msgpack_binary
+    true
+  end
+
   def format(tag, time, record)
     [tag, time, record].to_msgpack
   end

@@ -233,7 +233,7 @@ DESC
       host,port = connect_to(tag, name)
       req = post_request(tag, name, value)
       http = http_connection(host, port)
-      res = http.start {|http| http.request(req) }
+      res = http.start {|client| client.request(req) }
     rescue IOError, EOFError, SystemCallError
       # server didn't respond
       log.warn "net/http POST raises exception: #{$!.class}, '#{$!.message}'"

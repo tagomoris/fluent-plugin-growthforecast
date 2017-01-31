@@ -1,4 +1,5 @@
 require 'helper'
+require 'fluent/test/driver/output'
 
 class GrowthForecastOutputTest < Test::Unit::TestCase
   # setup/teardown and tests of dummy growthforecast server defined at the end of this class...
@@ -119,8 +120,8 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       remove_prefix test
   ]
 
-  def create_driver(conf=CONFIG1, tag='test.metrics')
-    Fluent::Test::OutputTestDriver.new(Fluent::GrowthForecastOutput, tag).configure(conf)
+  def create_driver(conf=CONFIG1)
+    Fluent::Test::Driver::Output.new(Fluent::Plugin::GrowthForecastOutput).configure(conf)
   end
 
   def test_configure_and_format_url
@@ -170,9 +171,10 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   #     tag_for   name_prefix
   # ]
   def test_emit_1
-    d = create_driver(CONFIG1, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run
+    d = create_driver(CONFIG1)
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]
@@ -202,9 +204,10 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   #     mode count
   # ]
   def test_emit_2
-    d = create_driver(CONFIG2, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run
+    d = create_driver(CONFIG2)
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]
@@ -234,10 +237,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   #     mode modified
   # ]
   def test_emit_3
-    d = create_driver(CONFIG3, 'test.metrics')
-    # recent ruby's Hash saves elements order....
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run
+    d = create_driver(CONFIG3)
+    d.run(default_tag: 'test.metrics') do
+      # recent ruby's Hash saves elements order....
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]
@@ -268,9 +272,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   def test_emit_4_auth
     @auth = true # enable authentication of dummy server
 
-    d = create_driver(CONFIG1, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run # failed in background, and output warn log
+    d = create_driver(CONFIG1)
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+      # failed in background, and output warn log
+    end
 
     assert_equal 0, @posted.size
     assert_equal 3, @prohibited
@@ -279,9 +285,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       authentication basic
       username alice
       password wrong_password
-    ], 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run # failed in background, and output warn log
+    ])
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+      # failed in background, and output warn log
+    end
 
     assert_equal 0, @posted.size
     assert_equal 6, @prohibited
@@ -290,9 +298,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       authentication basic
       username alice
       password secret!
-    ], 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run # failed in background, and output warn log
+    ])
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+      # failed in background, and output warn log
+    end
 
     assert_equal 6, @prohibited
     assert_equal 3, @posted.size
@@ -307,10 +317,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   # ]
 
   def test_emit_5
-    d = create_driver(CONFIG4, 'test.service')
-    # recent ruby's Hash saves elements order....
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run
+    d = create_driver(CONFIG4)
+    d.run(default_tag: 'test.service') do
+      # recent ruby's Hash saves elements order....
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]
@@ -339,9 +350,10 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   #     tag_for   ignore
   # ]
   def test_with_space_1
-    d = create_driver(CONFIG_SPACE, 'test.foo')
-    d.emit({ 'field z' => 3 })
-    d.run
+    d = create_driver(CONFIG_SPACE)
+    d.run(default_tag: 'test.foo') do
+      d.feed({ 'field z' => 3 })
+    end
 
     assert_equal 1, @posted.size
     v = @posted[0]
@@ -349,9 +361,9 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 3, v[:data][:number]
     assert_equal 'gauge', v[:data][:mode]
     assert_nil v[:auth]
-    assert_equal 'service x', v[:service]
-    assert_equal 'metrics y', v[:section]
-    assert_equal 'field z', v[:name]
+    assert_equal 'service+x', v[:service]
+    assert_equal 'metrics+y', v[:section]
+    assert_equal 'field+z', v[:name]
   end
 
   # CONFIG_NON_KEEPALIVE = %[
@@ -363,9 +375,10 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   #     keepalive false
   # ]
   def test_non_keepalive
-    d = create_driver(CONFIG_NON_KEEPALIVE, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run
+    d = create_driver(CONFIG_NON_KEEPALIVE)
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]
@@ -397,10 +410,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   #     timeout   120
   # ]
   def test_threading
-    d = create_driver(CONFIG_THREADING_KEEPALIVE, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run
-    sleep 0.5 # wait internal posting thread loop
+    d = create_driver(CONFIG_THREADING_KEEPALIVE)
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+      sleep 0.5 # wait internal posting thread loop
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]
@@ -431,10 +445,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   #     keepalive false
   # ]
   def test_threading_non_keepalive
-    d = create_driver(CONFIG_THREADING_NON_KEEPALIVE, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run
-    sleep 0.5 # wait internal posting thread loop
+    d = create_driver(CONFIG_THREADING_NON_KEEPALIVE)
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+      sleep 0.5 # wait internal posting thread loop
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]
@@ -465,9 +480,10 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   #     tag_for   name_prefix
   # ]
   def test_graphs
-    d = create_driver(CONFIG_GRAPHS, 'test.metrics')
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run
+    d = create_driver(CONFIG_GRAPHS)
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]
@@ -499,9 +515,10 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   def test_enable_float_number
     @enable_float_number = true # enable float number of dummy server
 
-    d = create_driver(CONFIG_ENABLE_FLOAT_NUMBER, 'test.metrics')
-    d.emit({ 'field1' => 50.5, 'field2' => -20.1, 'field3' => 10, 'otherfield' => 1 })
-    d.run
+    d = create_driver(CONFIG_ENABLE_FLOAT_NUMBER)
+    d.run(default_tag: 'test.metrics') do
+      d.feed({ 'field1' => 50.5, 'field2' => -20.1, 'field3' => 10, 'otherfield' => 1 })
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]
@@ -515,7 +532,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 'metrics', v1st[:section]
     assert_equal 'test.metrics_field1', v1st[:name]
 
-    assert_equal -20.1, v2nd[:data][:number]
+    assert_equal (-20.1), v2nd[:data][:number]
     assert_equal 'test.metrics_field2', v2nd[:name]
 
     assert_equal 1, v3rd[:data][:number]
@@ -523,10 +540,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   end
 
   def test_gfapi_path
-    d = create_driver(CONFIG_GFAPI_PATH, 'test.service')
-    # recent ruby's Hash saves elements order....
-    d.emit({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-    d.run
+    d = create_driver(CONFIG_GFAPI_PATH)
+    d.run(default_tag: 'test.service') do
+      # recent ruby's Hash saves elements order....
+      d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
+    end
 
     assert_equal 3, @posted.size
     v1st = @posted[0]
@@ -556,10 +574,10 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     @enable_float_number = false
     @dummy_server_thread = Thread.new do
       srv = if ENV['VERBOSE']
-              WEBrick::HTTPServer.new({:BindAddress => '127.0.0.1', :Port => GF_TEST_LISTEN_PORT})
+              WEBrick::HTTPServer.new({BindAddress: '127.0.0.1', Port: GF_TEST_LISTEN_PORT})
             else
               logger = WEBrick::Log.new('/dev/null', WEBrick::BasicLog::DEBUG)
-              WEBrick::HTTPServer.new({:BindAddress => '127.0.0.1', :Port => GF_TEST_LISTEN_PORT, :Logger => logger, :AccessLog => []})
+              WEBrick::HTTPServer.new({BindAddress: '127.0.0.1', Port: GF_TEST_LISTEN_PORT, Logger: logger, AccessLog: []})
             end
       begin
         srv.mount_proc('/api') { |req,res| # /api/:service/:section/:name
@@ -586,11 +604,11 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
 
           number = @enable_float_number ? post_param['number'].to_f : post_param['number'].to_i
           @posted.push({
-              :service => service,
-              :section => section,
-              :name => graph_name,
-              :auth => nil,
-              :data => { :number => number, :mode => post_param['mode'] },
+              service: service,
+              section: section,
+              name: graph_name,
+              auth: nil,
+              data: { number: number, mode: post_param['mode'] },
             })
 
           res.status = 200
@@ -608,7 +626,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     # to wait completion of dummy server.start()
     require 'thread'
     cv = ConditionVariable.new
-    watcher = Thread.new {
+    _watcher = Thread.new {
       connected = false
       while not connected
         begin
@@ -636,9 +654,12 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     host = server.split(':')[0]
     port = server.split(':')[1].to_i
     client = Net::HTTP.start(host, port)
+    content_type = {'Content-Type' => 'application/x-www-form-urlencoded'}
 
     assert_equal '200', client.request_get('/').code
-    assert_equal '200', client.request_post('/api/service/metrics/hoge', 'number=1&mode=gauge').code
+    assert_equal '200', client.request_post('/api/service/metrics/hoge',
+                                            'number=1&mode=gauge',
+                                            initheader = content_type).code
 
     assert_equal 1, @posted.size
 
@@ -649,7 +670,9 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 'metrics', @posted[0][:section]
     assert_equal 'hoge', @posted[0][:name]
 
-    assert_equal '200', client.request_post(URI.escape('/api/service x/metrics/hoge'), 'number=1&mode=gauge').code
+    assert_equal '200', client.request_post(URI.escape('/api/service x/metrics/hoge'),
+                                            'number=1&mode=gauge',
+                                            initheader = content_type).code
 
     assert_equal 2, @posted.size
 
@@ -662,7 +685,9 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
 
     @auth = true
 
-    assert_equal '403', client.request_post('/api/service/metrics/pos', 'number=30&mode=gauge').code
+    assert_equal '403', client.request_post('/api/service/metrics/pos',
+                                            'number=30&mode=gauge',
+                                            initheader = content_type).code
 
     req_with_auth = lambda do |number, mode, user, pass|
       url = URI.parse("http://#{host}:#{port}/api/service/metrics/pos")

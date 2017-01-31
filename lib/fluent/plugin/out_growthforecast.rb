@@ -1,3 +1,5 @@
+require 'fluent/plugin/output'
+
 require 'net/http'
 require 'uri'
 require 'cgi/util'
@@ -5,10 +7,6 @@ require 'resolve/hostname'
 
 class Fluent::Plugin::GrowthForecastOutput < Fluent::Plugin::Output
   Fluent::Plugin.register_output('growthforecast', self)
-
-  def initialize
-    super
-  end
 
   config_param :gfapi_url, :string, # growth.forecast.local/api/
                desc: 'The URL of a GrowthForecast API endpoint.'

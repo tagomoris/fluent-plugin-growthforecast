@@ -165,16 +165,12 @@ DESC
     @resolver = Resolve::Hostname.new(system_resolver: true)
   end
 
+  def multi_workers_ready?
+    true
+  end
+
   def prefer_buffered_processing
     @background_post
-  end
-
-  def start
-    super
-  end
-
-  def shutdown
-    super
   end
 
   def placeholder_mapping(tag, name)

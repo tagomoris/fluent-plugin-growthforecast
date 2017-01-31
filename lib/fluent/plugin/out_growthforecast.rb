@@ -1,92 +1,84 @@
-class Fluent::GrowthForecastOutput < Fluent::Output
+require 'fluent/plugin/output'
+require 'net/http'
+require 'uri'
+require 'resolve/hostname'
+
+class Fluent::Plugin::GrowthForecastOutput < Fluent::Plugin::Output
   Fluent::Plugin.register_output('growthforecast', self)
 
-  def initialize
-    super
-    require 'net/http'
-    require 'uri'
-    require 'resolve/hostname'
-  end
-
   config_param :gfapi_url, :string, # growth.forecast.local/api/
-               :desc => 'The URL of a GrowthForecast API endpoint.'
-  config_param :graph_path, :string, :default => nil,
-               :desc => <<-DESC
+               desc: 'The URL of a GrowthForecast API endpoint.'
+  config_param graph_path, :string, default: nil,
+               desc: <<-DESC
 The graph path for GrowthForecast API endpoint with the order of service, section, graph_name.
 DESC
-  config_param :service, :string, :default => nil,
-               :desc => 'The service_name of graphs to create.'
-  config_param :section, :string, :default => nil,
-               :desc => 'The section_name of graphs to create.'
-  config_param :graphs, :string, :default => nil,
-               :desc => <<-DESC
+  config_param :service, :string, default: nil,
+               desc: 'The service_name of graphs to create.'
+  config_param :section, :string, default: nil,
+               desc: 'The section_name of graphs to create.'
+  config_param :graphs, :string, default: nil,
+               desc: <<-DESC
 You may use this option to specify graph names correspond to each of name_keys.
 Separate by , (comma). The number of graph names must be same with the number of name_keys.
 DESC
 
-  config_param :ssl, :bool, :default => false,
-               :desc => 'Use SSL (https) or not.'
-  config_param :verify_ssl, :bool, :default => false,
-               :desc => 'Do SSL verification or not.'
+  config_param :ssl, :bool, default: false,
+               desc: 'Use SSL (https) or not.'
+  config_param :verify_ssl, :bool, default: false,
+               desc: 'Do SSL verification or not.'
 
-  config_param :name_keys, :string, :default => nil,
-               :desc => <<-DESC
+  config_param :name_keys, :string, default: nil,
+               desc: <<-DESC
 Specify field names of the input record. Separate by , (comma).
 The values of these fields are posted as numbers, and names of thease fields are used as parts of grame_names.
 Either of name_keys or name_key_pattern is required.
 DESC
-  config_param :name_key_pattern, :string, :default => nil,
-               :desc => <<-DESC
+  config_param :name_key_pattern, :string, default: nil,
+               desc: <<-DESC
 Specify the field names of the input record by a regular expression.
 The values of these fields are posted as numbers,
 and names of thease fields are used as parts of grame_names.
 Either of name_keys or name_key_pattern is required.
 DESC
 
-  config_param :mode, :string, :default => 'gauge', # or count/modified
-               :desc => <<-DESC
+  config_param :mode, :string, default: 'gauge', # or count/modified
+               desc: <<-DESC
 The graph mode (either of gauge, count, or modified).
 Just same as mode of GrowthForecast POST parameter.
 DESC
 
-  config_param :remove_prefix, :string, :default => nil,
-               :desc => 'The prefix string which will be removed from the tag.'
-  config_param :tag_for, :string, :default => 'name_prefix', # or 'ignore' or 'section' or 'service'
-               :desc => 'Either of name_prefix, section, service, or ignore.'
+  config_param :remove_prefix, :string, default: nil,
+               desc: 'The prefix string which will be removed from the tag.'
+  config_param :tag_for, :string, default: 'name_prefix', # or 'ignore' or 'section' or 'service'
+               desc: 'Either of name_prefix, section, service, or ignore.'
 
-  config_param :background_post, :bool, :default => false,
-               :desc => 'Post to GrowthForecast in background thread, without retries for failures'
+  config_param :background_post, :bool, default: false,
+               desc: 'Post to GrowthForecast in background thread, without retries for failures'
 
-  config_param :timeout, :integer, :default => nil, # default 60secs
-               :desc => 'Read/Write timeout seconds'
-  config_param :retry, :bool, :default => true,
-               :desc => <<-DESC
-Do retry for HTTP request failures, or not.
-This feature will be set as false for background_post yes automatically.
+  config_param :timeout, :integer, default: nil, # default 60secs
+               desc: 'Read/Write timeout seconds'
+  config_param :retry, :bool, default: true,
+               desc: <<-DESC
+Do retry for HTTP request failures, or not (enabled only for background_post true).
 DESC
-  config_param :keepalive, :bool, :default => true,
-               :desc => 'Use a keepalive HTTP connection.'
-  config_param :enable_float_number, :bool, :default => false,
-               :desc => 'Post a floating number rather than an interger number.'
+  config_param :keepalive, :bool, default: true,
+               desc: 'Use a keepalive HTTP connection.'
+  config_param :enable_float_number, :bool, default: false,
+               desc: 'Post a floating number rather than an interger number.'
 
-  config_param :authentication, :string, :default => nil, # nil or 'none' or 'basic'
-               :desc => 'Specify basic if your GrowthForecast protected with basic authentication.'
-  config_param :username, :string, :default => '',
-               :desc => 'The username for authentication.'
-  config_param :password, :string, :default => '', :secret => true,
-               :desc => 'The password for authentication.'
+  config_param :authentication, :string, default: nil, # nil or 'none' or 'basic'
+               desc: 'Specify basic if your GrowthForecast protected with basic authentication.'
+  config_param :username, :string, default: '',
+               desc: 'The username for authentication.'
+  config_param :password, :string, :default: '', secret: true,
+               desc: 'The password for authentication.'
 
   DEFAULT_GRAPH_PATH = {
-    :ignore => '${service}/${section}/${key_name}',
-    :service => '${tag}/${section}/${key_name}',
-    :section => '${service}/${tag}/${key_name}',
-    :name_prefix => '${service}/${section}/${tag}_${key_name}',
+    ignore: '${service}/${section}/${key_name}',
+    service: '${tag}/${section}/${key_name}',
+    section: '${service}/${tag}/${key_name}',
+    name_prefix: '${service}/${section}/${tag}_${key_name}',
   }
-
-  # Define `log` method for v0.10.42 or earlier
-  unless method_defined?(:log)
-    define_method("log") { $log }
-  end
 
   def configure(conf)
     super
@@ -156,46 +148,11 @@ DESC
             else
               :none
             end
-    @resolver = Resolve::Hostname.new(:system_resolver => true)
+    @resolver = Resolve::Hostname.new(system_resolver: true)
   end
 
-  def start
-    super
-
-    @running = true
-    @thread = nil
-    @queue = nil
-    @mutex = nil
-    if @background_post
-      @mutex = Mutex.new
-      @queue = []
-      @thread = Thread.new(&method(:poster))
-    end
-  end
-
-  def shutdown
-    @running = false
-    @thread.join if @thread
-    super
-  end
-
-  def poster
-    while @running
-      if @queue.size < 1
-        sleep(0.2)
-        next
-      end
-
-      events = @mutex.synchronize {
-        es,@queue = @queue,[]
-        es
-      }
-      begin
-        post_events(events) if events.size > 0
-      rescue => e
-        log.warn "HTTP POST in background Error occures to growthforecast server", :error_class => e.class, :error => e.message
-      end
-    end
+  def prefer_buffered_processing
+    @background_post
   end
 
   def placeholder_mapping(tag, name)
@@ -256,7 +213,7 @@ DESC
       res = http.start {|http| http.request(req) }
     rescue IOError, EOFError, SystemCallError
       # server didn't respond
-      log.warn "net/http POST raises exception: #{$!.class}, '#{$!.message}'"
+      log.warn "net/http POST raises exception", error: $!
     end
     unless res and res.is_a?(Net::HTTPSuccess)
       log.warn "failed to post to growthforecast: #{url}, number: #{value}, code: #{res && res.code}"
@@ -283,19 +240,13 @@ DESC
           log.warn "failed to post to growthforecast: #{host}:#{port}#{req.path}, post_data: #{req.body} code: #{res && res.code}"
         end
       rescue IOError, EOFError, Errno::ECONNRESET, Errno::ETIMEDOUT, SystemCallError
-        log.warn "net/http keepalive POST raises exception: #{$!.class}, '#{$!.message}'"
-        begin
-          http.finish
-        rescue => e
-          # ignore all errors for connection with error
-        end
+        log.warn "net/http keepalive POST raises exception", error: $!
+        http.finish rescue nil # ignore all errors for connection with error
         http = nil
       end
     end
-    begin
-      http.finish
-    rescue => e
-      # ignore
+    if http
+      http.finish rescue nil
     end
   end
 
@@ -309,38 +260,61 @@ DESC
     end
   end
 
-  def emit(tag, es, chain)
+  def gf_events(tag, time, record)
     events = []
     if @name_keys
-      es.each {|time,record|
-        @name_keys.each_with_index {|name, i|
-          if value = record[name]
-            events.push({:tag => tag, :name => (@graphs ? @graphs[i] : name), :value => value})
-          end
-        }
-      }
+      @name_keys.each_with_index do |name, i|
+        if value = record[name]
+          events.push({tag: tag, name: (@graphs ? @graphs[i] : name), value: value})
+        end
+      end
     else # for name_key_pattern
-      es.each {|time,record|
-        record.keys.each {|key|
-          if @name_key_pattern.match(key) and record[key]
-            events.push({:tag => tag, :name => key, :value => record[key]})
-          end
-        }
-      }
-    end
-    if @thread
-      @mutex.synchronize do
-        @queue += events
-      end
-    else
-      begin
-        post_events(events)
-      rescue => e
-        log.warn "HTTP POST Error occures to growthforecast server", :error_class => e.class, :error => e.message
-        raise if @retry
+      record.keys.each do |key|
+        if @name_key_pattern.match(key) and record[key]
+          events.push({tag: tag, name: key, value: record[key]})
+        end
       end
     end
+    events
+  end
 
-    chain.next
+  def gf_events_from_es(tag, es)
+    events = []
+    es.each do |time, record|
+      events.concat(gf_events(tag, time, record))
+    end
+    events
+  end
+
+  def process(tag, es)
+    events = gf_events_from_es(tag, es)
+    begin
+      post_events(events)
+    rescue => e
+      log.warn "HTTP POST Error occures to growthforecast server, ignored (use background_post for retries)", error: e
+    end
+  end
+
+  def format(tag, time, record)
+    gf_events(tag, time, record).to_msgpack
+  end
+
+  ### We need something like this:
+  # def format_returns_msgpack_binary
+  #   true
+  # end
+
+  def write(chunk)
+    chunk.extend Fluent::ChunkMessagePackEventStreamer # this should be done in Fluentd core side :(
+    events = []
+    chunk.each do |gf_event|
+      events << gf_event
+    end
+    begin
+      post_events(events)
+    rescue => e
+      log.warn "HTTP POST Error occurs to growthforecast server", error: e
+      raise if @retry
+    end
   end
 end

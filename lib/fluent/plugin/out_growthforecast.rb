@@ -78,6 +78,11 @@ DESC
   config_param :password, :string, default: '', secret: true,
                desc: 'The password for authentication.'
 
+  config_section :buffer do
+    config_set_default :chunk_keys, ["tag"]
+    config_set_default :flush_mode, :immediate
+  end
+
   DEFAULT_GRAPH_PATH = {
     ignore: '${service}/${section}/${key_name}',
     service: '${tag}/${section}/${key_name}',
@@ -87,6 +92,10 @@ DESC
 
   def configure(conf)
     super
+
+    unless @chunk_key_tag
+      raise Fluent::ConfigError, "configure buffer chunk_keys with tag"
+    end
 
     if @gfapi_url !~ /\/api\/\Z/
       raise Fluent::ConfigError, "gfapi_url must end with /api/"
@@ -304,14 +313,6 @@ DESC
     events
   end
 
-  def formatted_to_msgpack_binary
-    true
-  end
-
-  def format(tag, time, record)
-    [tag, time, record].to_msgpack
-  end
-
   def process(tag, es)
     events = gf_events_from_es(tag, es)
     begin
@@ -322,12 +323,13 @@ DESC
   end
 
   def write(chunk)
+    tag = chunk.metadata.tag
     events = []
-    chunk.msgpack_each do |tag, time, record|
-      events << gf_events(tag, time, record)
+    chunk.each do |time, record|
+      events.concat(gf_events(tag, time, record))
     end
     begin
-      post_events(events.first) # should pass [...] instead of [[...]]
+      post_events(events)
     rescue => e
       log.warn "HTTP POST Error occures to growthforecast server", error: e
       raise if @retry

@@ -172,6 +172,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   # ]
   def test_emit_1
     d = create_driver(CONFIG1)
+    d.end_if{ @posted.size == 3 }
     d.run(default_tag: 'test.metrics') do
       d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
     end
@@ -205,6 +206,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   # ]
   def test_emit_2
     d = create_driver(CONFIG2)
+    d.end_if{ @posted.size == 3 }
     d.run(default_tag: 'test.metrics') do
       d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
     end
@@ -238,6 +240,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   # ]
   def test_emit_3
     d = create_driver(CONFIG3)
+    d.end_if{ @posted.size == 3 }
     d.run(default_tag: 'test.metrics') do
       # recent ruby's Hash saves elements order....
       d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
@@ -273,6 +276,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     @auth = true # enable authentication of dummy server
 
     d = create_driver(CONFIG1)
+    d.end_if{ @prohibited == 3 }
     d.run(default_tag: 'test.metrics') do
       d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
       # failed in background, and output warn log
@@ -286,6 +290,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       username alice
       password wrong_password
     ])
+    d.end_if{ @prohibited == 6 }
     d.run(default_tag: 'test.metrics') do
       d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
       # failed in background, and output warn log
@@ -299,6 +304,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
       username alice
       password secret!
     ])
+    d.end_if{ @posted.size == 3 }
     d.run(default_tag: 'test.metrics') do
       d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
       # failed in background, and output warn log
@@ -318,6 +324,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
 
   def test_emit_5
     d = create_driver(CONFIG4)
+    d.end_if{ @posted.size == 3 }
     d.run(default_tag: 'test.service') do
       # recent ruby's Hash saves elements order....
       d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
@@ -351,6 +358,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   # ]
   def test_with_space_1
     d = create_driver(CONFIG_SPACE)
+    d.end_if{ @posted.size == 1 }
     d.run(default_tag: 'test.foo') do
       d.feed({ 'field z' => 3 })
     end
@@ -376,6 +384,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   # ]
   def test_non_keepalive
     d = create_driver(CONFIG_NON_KEEPALIVE)
+    d.end_if{ @posted.size == 3 }
     d.run(default_tag: 'test.metrics') do
       d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
     end
@@ -411,9 +420,9 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   # ]
   def test_threading
     d = create_driver(CONFIG_THREADING_KEEPALIVE)
+    d.end_if{ @posted.size == 3 }
     d.run(default_tag: 'test.metrics') do
       d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-      sleep 0.5 # wait internal posting thread loop
     end
 
     assert_equal 3, @posted.size
@@ -446,9 +455,9 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   # ]
   def test_threading_non_keepalive
     d = create_driver(CONFIG_THREADING_NON_KEEPALIVE)
+    d.end_if{ @posted.size == 3 }
     d.run(default_tag: 'test.metrics') do
       d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
-      sleep 0.5 # wait internal posting thread loop
     end
 
     assert_equal 3, @posted.size
@@ -481,6 +490,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
   # ]
   def test_graphs
     d = create_driver(CONFIG_GRAPHS)
+    d.end_if{ @posted.size == 3 }
     d.run(default_tag: 'test.metrics') do
       d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
     end
@@ -516,6 +526,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     @enable_float_number = true # enable float number of dummy server
 
     d = create_driver(CONFIG_ENABLE_FLOAT_NUMBER)
+    d.end_if{ @posted.size == 3 }
     d.run(default_tag: 'test.metrics') do
       d.feed({ 'field1' => 50.5, 'field2' => -20.1, 'field3' => 10, 'otherfield' => 1 })
     end
@@ -541,6 +552,8 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
 
   def test_gfapi_path
     d = create_driver(CONFIG_GFAPI_PATH)
+
+    d.end_if{ @posted.size == 3 }
     d.run(default_tag: 'test.service') do
       # recent ruby's Hash saves elements order....
       d.feed({ 'field1' => 50, 'field2' => 20, 'field3' => 10, 'otherfield' => 1 })
@@ -670,7 +683,7 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     assert_equal 'metrics', @posted[0][:section]
     assert_equal 'hoge', @posted[0][:name]
 
-    assert_equal '200', client.request_post(URI.escape('/api/service x/metrics/hoge'),
+    assert_equal '200', client.request_post('/api/service%20x/metrics/hoge',
                                             'number=1&mode=gauge',
                                             initheader = content_type).code
 
@@ -713,5 +726,4 @@ class GrowthForecastOutputTest < Test::Unit::TestCase
     @dummy_server_thread.kill
     @dummy_server_thread.join
   end
-
 end

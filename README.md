@@ -11,6 +11,13 @@ About GrowthForecast, see:
 
 GrowthForecast is very simple and powerful tool to draw graphs what we want, with GrowthForecastOutput and Fluentd.
 
+### Requirements
+
+| fluent-plugin-growthforecast | fluentd    | ruby   |
+|------------------------------|------------|--------|
+| >= 1.0.0                     | >= v0.14.0 | >= 2.1 |
+| <  1.0.0                     | <  v0.14.0 | >= 1.9 |
+
 ### Configuration
 
 For messages such as:
